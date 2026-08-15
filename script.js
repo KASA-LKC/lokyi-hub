@@ -828,6 +828,94 @@ function initTodos() {
     if (!a.length) lines.push('（目前沒有待辦）');
     if ($id('exportOut')) $id('exportOut').textContent = lines.join('\n');
   };
+  /* 🆕 v2.3.1 智慧生成待辦 */
+  if ($id('autoTdBtn')) $id('autoTdBtn').onclick = renderAutoTd;
+}
+
+/* ============================================================
+   🆕 v2.3.1 智慧生成待辦：掃描 Dashboard 截止日期 / 報名事項
+   來源：學校日程 · 交換材料清單 · 資助申請 · 求職面試 · WIE 時數
+   ============================================================ */
+function autoTdCat(t) {
+  if (/交換/.test(t)) return '交換計劃';
+  if (/WIE/.test(t)) return 'WIE 實習';
+  if (/TSFS|NLSFT|資助/.test(t)) return '資助申請';
+  if (/選科|Add \/ Drop|調整|Semester|開學/.test(t)) return '學業';
+  if (/面試/.test(t)) return '求職';
+  return '學業';
+}
+function autoTodoCandidates() {
+  var out = [], today = todayStr();
+  function add(autoId, t, cat, due, src) { out.push({ autoId: autoId, t: t, cat: cat, due: due, src: src }); }
+  /* 1. 學校日程（截止 / 報名 / 選科類；排除「開課」等純事件） */
+  FIX.lyDeadlines.forEach(function (x) {
+    if (!x.d || x.d < today) return;
+    if (/開課/.test(x.t)) return;
+    add('dl:' + x.t + ':' + x.d, x.t, autoTdCat(x.t), x.d, 'Dashboard · 學校日程');
+  });
+  /* 2. 交換計劃材料（未勾選 → 掛申請截止日前完成） */
+  var exDue = '2026-09-03';
+  if (exDue >= today) LS.get('exchk', FIX.exCheck.slice()).forEach(function (c) {
+    if (!c.done) add('ex:' + c.t, '交換申請：準備 ' + c.t, '交換計劃', exDue, 'Dashboard · 交換材料清單');
+  });
+  /* 3. 資助申請（未開始 / 準備中） */
+  LS.get('funds', []).forEach(function (f) {
+    if (!f.due || f.due < today) return;
+    if (f.status === '已遞交' || f.status === '已批核') return;
+    add('fn:' + f.name + ':' + f.due, '遞交「' + f.name + '」申請', '資助申請', f.due, 'Dashboard · 資助申請');
+  });
+  /* 4. 求職面試（面試中且有面試日期） */
+  LS.get('jobs', []).forEach(function (j) {
+    if (!j.int || j.int < today) return;
+    if (j.status !== '面試中') return;
+    add('job:' + (j.co || '') + (j.pos || '') + ':' + j.int, '準備 ' + (j.co || '') + '·' + (j.pos || '') + ' 面試', '求職', j.int, 'Dashboard · 求職追蹤');
+  });
+  /* 5. WIE 時數（未達標且有截止日） */
+  var wie = LS.get('wie', { req: 960, done: 0, due: '' });
+  if (wie.due && wie.due >= today && (wie.done || 0) < (wie.req || 960)) {
+    add('wie:hours', 'WIE 時數達標（尚欠 ' + ((wie.req || 960) - (wie.done || 0)) + ' 小時）', 'WIE 實習', wie.due, 'Dashboard · WIE 進度');
+  }
+  /* 去重：已存在（含已完成）的 autoId 或同名事項不再生成 */
+  var exist = {};
+  LS.get('todos', []).forEach(function (t) {
+    if (t.autoId) exist[t.autoId] = 1;
+    exist['T:' + t.t] = 1;
+  });
+  return out.filter(function (c) { return !exist[c.autoId] && !exist['T:' + c.t]; })
+            .sort(function (a, b) { return (a.due || '9999').localeCompare(b.due || '9999'); });
+}
+function renderAutoTd() {
+  var box = $id('autoTdBox'); if (!box) return;
+  var list = autoTodoCandidates();
+  if (!list.length) {
+    box.hidden = false;
+    box.innerHTML = '<div class="atd-head">🤖 智慧掃描完成 — 沒有新的待辦需要生成 🎉<br><span class="atd-sub">Dashboard 內的截止 / 報名事項都已在待辦清單內</span></div>';
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML = '<div class="atd-head">🤖 從 Dashboard 掃描到 <b>' + list.length + '</b> 項截止 / 報名事項<span class="atd-sub">已自動按截止日排序 · 取消勾選可排除</span></div>' +
+    list.map(function (c, i) {
+      var u = urgencyInfo(c.due);
+      return '<label class="atd-row"><input type="checkbox" data-ai="' + i + '" checked />' +
+        '<span class="atd-t">' + esc(c.t) + '</span>' +
+        '<span class="atd-tag">' + esc(c.cat) + '</span>' +
+        '<span class="atd-due">' + fmtD(c.due) + ' · ' + u.label + '</span>' +
+        '<span class="atd-src">' + esc(c.src) + '</span></label>';
+    }).join('') +
+    '<div class="atd-acts"><button class="primary" id="autoTdAdd">☑ 加入所選（' + list.length + '）</button>' +
+    '<button class="ghost" id="autoTdCancel">取消</button></div>';
+  $id('autoTdAdd').onclick = function () {
+    var picked = $qa('#autoTdBox input[data-ai]').filter(function (cb) { return cb.checked; })
+      .map(function (cb) { return list[+cb.getAttribute('data-ai')]; });
+    if (!picked.length) { toast('請先勾選至少一項'); return; }
+    var a = LS.get('todos', []);
+    picked.forEach(function (c) { a.push({ t: c.t, cat: c.cat, due: c.due, done: false, autoId: c.autoId }); });
+    LS.set('todos', a);
+    box.hidden = true; box.innerHTML = '';
+    renderTodos(); renderDashboard(); renderCalendar();
+    toast('已加入 ' + picked.length + ' 項待辦 ✓');
+  };
+  $id('autoTdCancel').onclick = function () { box.hidden = true; box.innerHTML = ''; };
 }
 
 /* ============================================================

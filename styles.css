@@ -889,3 +889,29 @@ html[data-theme="dark"] .diary-media { background: #1c222e; }
 .diary-media.is-video img { opacity: .15; }
 .dm-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; }
 .de-acts { display: flex; gap: 8px; align-items: center; }
+
+/* ============================================================
+   🆕 v2.3.1 智慧生成待辦（掃描 Dashboard 截止/報名事項）
+   ============================================================ */
+#autoTdBox { margin: 14px 0 6px; padding: 14px 16px; border: 1.5px dashed var(--red); border-radius: 14px; background: var(--red-soft); }
+.atd-head { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+.atd-sub { display: block; font-size: 12px; font-weight: 400; color: var(--mut); margin-top: 2px; }
+.atd-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; cursor: pointer; font-size: 13px; background: var(--card); margin-bottom: 4px; box-shadow: var(--shadow); }
+.atd-row:hover { background: #fafafa; }
+.atd-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--red); flex: none; }
+.atd-t { flex: 1; font-weight: 600; color: var(--ink); min-width: 0; }
+.atd-tag { flex: none; font-size: 11px; font-weight: 700; color: var(--red); background: var(--red-soft); border: 1px solid rgba(131,0,26,.18); padding: 2px 8px; border-radius: 999px; }
+.atd-due { flex: none; font-size: 12px; color: var(--mut); white-space: nowrap; }
+.atd-src { flex: none; font-size: 11px; color: var(--mut-2); white-space: nowrap; }
+.atd-acts { display: flex; gap: 10px; margin-top: 10px; }
+
+html[data-theme="dark"] #autoTdBox { background: rgba(131,0,26,.14); border-color: var(--red-3); }
+html[data-theme="dark"] .atd-head { color: #f2f4f8; }
+html[data-theme="dark"] .atd-row { background: #1c222e; }
+html[data-theme="dark"] .atd-row:hover { background: #232a38; }
+html[data-theme="dark"] .atd-t { color: #e8ebf1; }
+html[data-theme="dark"] .atd-tag { background: rgba(131,0,26,.25); border-color: rgba(194,37,67,.4); color: #f0a5b4; }
+@media (max-width: 640px) {
+  .atd-src { display: none; }
+  .atd-row { flex-wrap: wrap; row-gap: 2px; }
+}
