@@ -265,7 +265,8 @@ function switchAcct(a) {
   ACCT = a; LS.set('acct', a);
   $qa('.acct-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-acct') === a); });
   $qa('[data-account]').forEach(function (el) {
-    el.style.display = (el.getAttribute('data-account') === a) ? '' : 'none';
+    var a = el.getAttribute('data-account');
+    el.style.display = (a === 'shared' || a === ACCT) ? '' : 'none';
   });
   renderSidebarIdentity();
   goPage(a === 'ly' ? 'dashboard' : 'bf_dash', { keepSidebar: false });
@@ -1088,6 +1089,7 @@ function idbDel(id) { return idbTx('readwrite').then(function (st) { st.delete(i
 function renderMaterials() {
   if (!$id('matList')) return;
   idbAll().then(function (list) {
+    list = list.filter(function (m) { return m.id && /^(tt_file|media_|diary_)/.test(m.id) === false; });
     if (!list.length) { $id('matList').innerHTML = '<div class="empty-tip">尚未上傳材料（PPT / 練習 / 筆記）</div>'; return; }
     list.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
     var icons = { ppt: '📊', pdf: '📄', doc: '📝', xls: '📈', other: '📎' };
@@ -1725,6 +1727,145 @@ function lokiAnswer(q) {
   return '🤔 這題我還在學習…\n試試問：WIE 學分轉移、TSFS 截止、交換文件、CUHK 新媒體、Austin 錄取機會、怎樣安裝 App。\n' + (ctx ? '\n（提示：' + ctx + '）' : '');
 }
 
+/* ---- 🆕 v2.3：Loki 智能鏈（內部數據 → 外部檢索 Wikipedia → 兜底） ---- */
+function lokiInternalData(q) {
+  q = q.toLowerCase();
+  function has() { for (var i = 0; i < arguments.length; i++) { if (q.indexOf(arguments[i]) >= 0) return true; } return false; }
+  /* 今日課堂 */
+  if (has('今日課', '今天有什麼課', '時間表', '課表', '明天有什麼課', '上課')) {
+    var tt = LS.get('timetable', { slots: FIX.timetable.slice() });
+    var dow = (new Date().getDay() + 6) % 7;
+    var list = (tt.slots || []).filter(function (s) { return s.d === dow; }).sort(function (a, b) { return a.t - b.t; });
+    return '📅 今日（週' + '一二三四五'[dow] + '）共有 ' + list.length + ' 節課：\n' +
+      (list.map(function (s) { return '· ' + pad2(s.t) + ':00 ' + s.subj + (s.room ? '（' + s.room + '）' : ''); }).join('\n') || '（無課 🎉）') +
+      '\n\n💡 時間表不對？到「學習進度追蹤」頁上傳最新課表即可自動更新。';
+  }
+  /* 待辦 */
+  if (has('待辦', 'todo', '要做')) {
+    var todos = LS.get('todos', []).filter(function (t) { return !t.done; });
+    return '✅ 你有 ' + todos.length + ' 項未完成待辦：\n' +
+      (todos.slice(0, 8).map(function (t) { return '· ' + t.t + (t.due ? '（' + daysBadge(t.due) + '）' : ''); }).join('\n') || '（全部完成 🎉）');
+  }
+  /* GPA */
+  if (has('gpa')) {
+    var pf = LS.get('ly_profile', {});
+    var gp = LS.get('bf_gpacalc', []);
+    var lines = [];
+    if (pf.gpa) lines.push('· Lok Yi 當前 GPA：' + pf.gpa + (pf.target_gpa ? '（目標 ' + pf.target_gpa + '）' : ''));
+    if (gp.length) {
+      var cr = 0, pt = 0;
+      gp.forEach(function (r) { if (+r.cr > 0 && GPASCALE[r.g] != null) { cr += +r.cr; pt += +r.cr * GPASCALE[r.g]; } });
+      if (cr) lines.push('· Austin 模擬 GPA：' + (pt / cr).toFixed(2) + ' / 4.3（' + cr + ' 學分）');
+    }
+    return lines.length ? '📈 GPA 概況：\n' + lines.join('\n') : '📈 尚未記錄 GPA — 到「更新個人檔案」輸入當前 GPA，Austin 可用「科目進度」頁的 GPA 計算器。';
+  }
+  /* 倒數/截止 */
+  if (has('倒數', '截止', 'deadline', '大事', '重要日程')) {
+    var items = FIX.lyDeadlines.map(function (x) { x.n = daysUntil(x.d); return x; })
+      .filter(function (x) { return x.n != null && x.n >= 0; }).sort(function (a, b) { return a.n - b.n; }).slice(0, 5);
+    return '⏰ 最近的重要節點：\n' + items.map(function (x) { return '· ' + fmtD(x.d) + '（' + daysBadge(x.d) + '）' + x.t; }).join('\n');
+  }
+  /* 求職 */
+  if (has('投遞', '求職進度', '面試')) {
+    var jobs = LS.get('jobs', []);
+    return '🔍 求職追蹤：共投遞 ' + jobs.length + ' 個崗位' +
+      (jobs.length ? '\n' + jobs.slice(0, 6).map(function (j) { return '· ' + j.co + ' ' + j.pos + '（' + (j.status || '') + (j.int ? ' · 面試 ' + fmtD(j.int) : '') + '）'; }).join('\n') : '（暫無記錄）');
+  }
+  /* 科目進度 */
+  if (has('科目進度', '學分')) {
+    var subs = LS.get('bf_subjects', []);
+    var done = subs.filter(function (s) { return s.status === '已完成'; }).length;
+    return '📚 Austin 已修讀 ' + subs.length + ' 科（已完成 ' + done + ' 科）。Lok Yi 的科目在「REG & 學分管理」查看。';
+  }
+  /* 日記 */
+  if (has('日記', '纪念日', '在一起')) {
+    var anniv = LS.get('diary_anniv', '');
+    if (anniv) {
+      var n = daysUntil(anniv);
+      return '📔 我們在一起已 ' + Math.abs(n) + ' 天（紀念日 ' + fmtD(anniv) + '）。到「共同日記」看看你們的時光軸吧！';
+    }
+    return '📔 到「我們的共同日記」設定紀念日後，我可以告訴你們在一起多少天。';
+  }
+  return null;
+}
+/* 專有名詞內置詞庫（離線可答 · 不依賴網絡） */
+var LOKI_TERMS = [
+  { k: ['swot'], a: 'SWOT 分析：S=優勢(Strengths)、W=劣勢(Weaknesses)、O=機會(Opportunities)、T=威脅(Threats)。求職／報告／商業分析常用框架，寫 CV 或面試分析案例時很加分。' },
+  { k: ['seo'], a: 'SEO（Search Engine Optimization）搜尋引擎優化：讓內容在搜尋結果排更前的技術。小紅書的「關鍵詞佈局」就是社交平台版 SEO — 標題核心詞前置、正文埋詞、標籤強化。' },
+  { k: ['ctr'], a: 'CTR（Click-Through Rate）點擊率 = 點擊數 ÷ 曝光數。封面+標題決定 CTR，是小紅書筆記能否被點開的關鍵。' },
+  { k: ['roi'], a: 'ROI（Return on Investment）投資回報率 =（收益 − 成本）÷ 成本 × 100%。' },
+  { k: ['kol', 'koc'], a: 'KOL（Key Opinion Leader）關鍵意見領袖＝大V；KOC（Key Opinion Consumer）關鍵意見消費者＝真實感更強的素人買家。品牌現在更愛投 KOC — 真實、轉化高、成本低。' },
+  { k: ['完播率', '完播'], a: '完播率 = 看完人數 ÷ 播放人數。抖音第一權重指標，≥30% 才有望晉級更大流量池；前 3 秒鉤子直接決定完播率。' },
+  { k: ['私域', '公域'], a: '公域流量：平台分發的流量（推薦頁、搜索）；私域流量：自己能反覆觸達的用戶（粉絲群、微信、社群）。運營終極目標是「公域引流 → 私域沉澱」。' },
+  { k: ['種草'], a: '種草：透過真實分享激發別人購買／體驗慾望的內容方式；「草」=想買的慾望。小紅書核心內容生態。' },
+  { k: ['用戶畫像', '使用者畫像'], a: '用戶畫像（User Persona）：演算法根據行為（觀看、停留、互動）為每個用戶打的興趣標籤集合。抖音推薦 = 用戶畫像 × 內容標籤 雙向匹配。' },
+  { k: ['長尾'], a: '長尾流量（Long-tail）：發布很久仍持續從搜索進來的流量。小紅書優質筆記 6-12 個月仍有搜索流量；抖音爆發期只有 24-72 小時。' },
+  { k: ['流量池'], a: '流量池：抖音的分級賽馬機制 — 初始池 200-500 曝光 → 數據達標（完播>30%、互動>3%）晉級中池 1K-5K → 大池 1萬-10萬 → 爆款池 10萬+。每級都是「晉級考試」。' },
+  { k: ['non-jupas'], a: 'Non-JUPAS：大學聯招以外的副學士/高級文憑/海外生升學通道。Austin 走的就是 HKCC Year 2 → PolyU Non-JUPAS 2027/28。' },
+  { k: ['ielts'], a: 'IELTS 雅思：英語能力試，滿分 9.0。Non-JUPAS 升學通常要 6.0-6.5+；Austin 目標 12 月應考。' },
+  { k: ['wie '], a: 'WIE（Work-Integrated Education）工作綜合學習：PolyU SHTM 必修，需完成指定實習時數。已有全職工作經驗可申請學分轉移（AR41C 表格），Lok Yi 截止 2026-08-31。' },
+  { k: ['tsfs', 'nlsft'], a: 'TSFS / NLSFT：香港政府學生資助計劃（免入息審查貸款／資助）。申請截止 2026-09-25，記得準備入息證明文件。' },
+  { k: ['gpa'], a: 'GPA（Grade Point Average）平均績點：加權計算的成績指標。PolyU 4.3 制（A+=4.3）；HKCC 也是 4.3 制。升學看 CGPA（累計 GPA）。' }
+];
+function wikiFetchTimeout(url, ms) {
+  var ctl = ('AbortController' in window) ? new AbortController() : null;
+  var t = ctl ? setTimeout(function () { ctl.abort(); }, ms || 5000) : null;
+  var p = fetch(url, ctl ? { signal: ctl.signal } : undefined);
+  if (ctl) p = p.catch(function (e) { throw e; }).then(function (r) { clearTimeout(t); return r; }, function (e) { clearTimeout(t); throw e; });
+  return p;
+}
+function wikiSearch(q) {
+  var clean = q.replace(/[?？!！。,.，、]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!clean) return Promise.resolve(null);
+  var u1 = 'https://zh.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srlimit=1&srsearch=' + encodeURIComponent(clean);
+  return wikiFetchTimeout(u1, 5000).then(function (r) { return r.json(); }).then(function (d) {
+    var hit = d && d.query && d.query.search && d.query.search[0];
+    if (!hit) return null;
+    var title = hit.title;
+    var u2 = 'https://zh.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=1&explaintext=1&redirects=1&titles=' + encodeURIComponent(title);
+    return wikiFetchTimeout(u2, 5000).then(function (r) { return r.json(); }).then(function (d2) {
+      var pages = d2.query && d2.query.pages;
+      var pid = pages ? Object.keys(pages)[0] : null;
+      var ext = pid && pages[pid].extract ? pages[pid].extract : '';
+      if (!ext) return { title: title, sum: '', url: 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(title) };
+      var sum = ext.replace(/\s+/g, ' ').trim().slice(0, 320);
+      return { title: title, sum: sum, url: 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(title) };
+    });
+  }).catch(function () { return null; });
+}
+function lokiSmartAnswer(q) {
+  return new Promise(function (resolve) {
+    var inner = lokiInternalData(q);
+    /* 內置專有名詞詞庫 */
+    var low = q.toLowerCase();
+    var term = null;
+    LOKI_TERMS.forEach(function (e) {
+      e.k.forEach(function (kw) {
+        if (!term && low.indexOf(kw) >= 0) term = e.a;
+      });
+    });
+    wikiSearch(q).then(function (wk) {
+      var parts = [];
+      if (inner) parts.push(inner);
+      if (term && wk) parts.push('📖 <b>名詞解釋</b>\n' + term);
+      else if (term) parts.push('📖 <b>名詞解釋</b>\n' + term);
+      if (wk) {
+        parts.push('🌐 <b>外部知識（維基百科）</b>\n「' + wk.title + '」：' + (wk.sum || '（摘要暫缺）') +
+          (wk.sum.length >= 320 ? '…' : '') + '\n📖 完整內容：<a href="' + wk.url + '" target="_blank" rel="noopener">' + wk.url + '</a>');
+      }
+      if (!parts.length) {
+        resolve('🤔 內部和外部都查不到「' + esc(q.slice(0, 30)) + '」…\n試試換個說法，或問我：今日課堂、待辦、GPA、倒數、WIE、TSFS、交換；也可以直接問專有名詞（如 SWOT、SEO、完播率、流量池、私域流量），我會先查內置詞庫，再聯網維基百科給你解釋＋來源鏈接。（聯網檢索需要網絡可以訪問 Wikipedia）');
+        return;
+      }
+      var src = inner ? '內部資料' : '';
+      if (term) src += (src ? ' + ' : '') + '內置詞庫';
+      if (wk) src += (src ? ' + ' : '') + '外部檢索';
+      resolve('✨ 綜合回答（' + src + '）：\n\n' + parts.join('\n\n') +
+        (wk ? '' : '\n\nℹ️（外部檢索暫時不可用 — 網絡需能訪問 Wikipedia；上面是內置知識的回答）'));
+    });
+  });
+}
+
 function initLoki() {
   var msgs = $id('aiMessages');
   function addMsg(text, who) {
@@ -1734,11 +1875,34 @@ function initLoki() {
     msgs.appendChild(m);
     msgs.scrollTop = msgs.scrollHeight;
   }
+  function addMsgHTML(html, typing) {
+    var m = document.createElement('div');
+    m.className = 'msg bot' + (typing ? ' typing' : '');
+    m.innerHTML = html;
+    msgs.appendChild(m);
+    msgs.scrollTop = msgs.scrollHeight;
+    return m;
+  }
+  function replaceLastMsg(html) {
+    var all = msgs.querySelectorAll('.msg.bot');
+    var last = all[all.length - 1];
+    if (last) { last.classList.remove('typing'); last.innerHTML = html; }
+    else addMsgHTML(html);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
   function ask(q) {
     addMsg(q, 'user');
-    setTimeout(function () {
-      addMsg(lokiAnswer(q), 'bot');
-    }, 420);
+    var local = lokiAnswer(q);
+    if (local && local.indexOf('還在學習') < 0) {
+      setTimeout(function () { addMsg(local, 'bot'); }, 420);
+      return;
+    }
+    addMsgHTML('🔎 正在查閱你的資料與外部知識…', true);
+    lokiSmartAnswer(q).then(function (ans) {
+      setTimeout(function () { replaceLastMsg(ans); }, 300);
+    }).catch(function () {
+      replaceLastMsg('❌ 查閱失敗（網絡問題？），請稍後再試');
+    });
   }
   window.LokiAI = {
     toggle: function () {
@@ -2371,6 +2535,475 @@ function initHelp() {
 }
 
 /* ============================================================
+   🆕 v2.3 新功能：課表上傳自動更新 / 今日課堂速覽 /
+   Loki 三級智能應答（內部數據 + 外部檢索）/ 自媒體運營 / 共同日記
+   ============================================================ */
+
+/* ---- 1. 課表上傳（圖片/PDF → IndexedDB 'tt_file'；粘貼文本 → 解析成 slots） ---- */
+function ttRenderPreview(rec) {
+  var box = $id('ttPreview'), inner = $id('ttPreviewBox');
+  if (!box) return;
+  if (!rec) { box.hidden = true; if ($id('timetableGrid')) $id('timetableGrid').style.display = ''; return; }
+  box.hidden = false;
+  var url = URL.createObjectURL(rec.blob);
+  inner.innerHTML = rec.type.indexOf('pdf') >= 0
+    ? '<embed src="' + url + '" type="application/pdf" class="tt-embed" />'
+    : '<img src="' + url + '" class="tt-img" alt="時間表" />';
+  if ($id('timetableGrid')) $id('timetableGrid').style.display = 'none';
+  if ($id('ttViewBtn')) $id('ttViewBtn').onclick = function () {
+    window.open(url, '_blank');
+  };
+  URL.revokeObjectURL /* keep url alive in embed/img until re-render */();
+}
+function ttLoadFile() {
+  if (!idbOpen) return Promise.resolve(null);
+  return idbTx('readonly').then(function (st) {
+    return new Promise(function (res) {
+      var r = st.get('tt_file');
+      r.onsuccess = function () { res(r.result || null); };
+      r.onerror = function () { res(null); };
+    });
+  }).catch(function () { return null; });
+}
+function ttSaveFile(file) {
+  idbAdd({ id: 'tt_file', name: file.name, type: file.type || 'image', size: file.size, date: todayStr(), blob: file })
+    .then(function () { ttRefresh(); toast('✅ 最新時間表已上傳，全站自動更新'); })
+    .catch(function () { toast('❌ 上傳失敗（不支援 IndexedDB？）'); });
+}
+function ttRefresh() {
+  ttLoadFile().then(function (rec) {
+    ttRenderPreview(rec);
+    if ($id('ttSrc')) $id('ttSrc').textContent = rec ? '（已上傳 ' + fmtD(rec.date) + ' 版 ✓）' : '（預設版 · 可上傳更新）';
+  });
+}
+/* 粘貼文本 → slots 解析器（支援：星期 + 時間 + 科目 + 課室，順序不限） */
+function ttParseText(txt) {
+  var dayMap = { '一': 0, 'mon': 0, '週一': 0, '星期一': 0, '二': 1, 'tue': 1, '週二': 1, '星期二': 1, '三': 2, 'wed': 2, '週三': 2, '星期三': 2, '四': 3, 'thu': 3, '週四': 3, '星期四': 3, '五': 4, 'fri': 4, '週五': 4, '星期五': 4 };
+  var lines = txt.split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
+  var slots = [];
+  lines.forEach(function (line) {
+    var low = line.toLowerCase();
+    var d = null;
+    Object.keys(dayMap).forEach(function (k) {
+      if (d === null && low.indexOf(k.toLowerCase()) >= 0) d = dayMap[k];
+    });
+    var hm = line.match(/(\d{1,2})\s*[:：]\s*(\d{2})/);
+    if (d === null || !hm) return;
+    var t = +hm[1];
+    if (t < 8 || t > 20) return;
+    var rest = line.replace(hm[0], ' ')
+      .replace(/[0-9]{1,2}\s*[:：]\s*[0-9]{2}\s*[-–~至]\s*[0-9]{1,2}\s*[:：]\s*[0-9]{2}/g, ' ')
+      .replace(/(星期|週)?[一二三四五六日]|mon|tue|wed|thu|fri/gi, ' ')
+      .replace(/[|｜,，、]/g, ' ').trim();
+    var parts = rest.split(/\s{1,}/).filter(Boolean);
+    var subj = parts.slice(0, parts.length > 1 ? parts.length - 1 : 1).join(' ');
+    var room = parts.length > 1 ? parts[parts.length - 1] : '';
+    if (subj) slots.push({ d: d, t: t, subj: subj, room: room });
+  });
+  return slots;
+}
+function initTimetableUpload() {
+  var up = $id('ttUploadBtn'), fin = $id('ttFile');
+  if (!up || !fin) return;
+  up.onclick = function () { fin.click(); };
+  fin.onchange = function () {
+    var f = fin.files && fin.files[0];
+    if (f) ttSaveFile(f);
+    fin.value = '';
+  };
+  if ($id('ttParseBtn')) $id('ttParseBtn').onclick = function () {
+    var v = ($id('ttPaste') || {}).value || '';
+    var slots = ttParseText(v);
+    if (!slots.length) { toast('解析不到課堂 — 每行要有「星期 + 時間」，例：Mon 10:00 HTM3201 QT308'); return; }
+    showConfirm('解析到 ' + slots.length + ' 節課，取代現有表格？（可在表格中繼續微調）').then(function (ok) {
+      if (!ok) return;
+      LS.set('timetable', { slots: slots });
+      $id('ttPaste').value = '';
+      ttRefresh(); renderStudy(); toast('✅ 已更新 ' + slots.length + ' 節課');
+    });
+  };
+  if ($id('ttDelBtn')) $id('ttDelBtn').onclick = function () {
+    showConfirm('移除上傳的時間表，還原為可編輯表格？').then(function (ok) {
+      if (!ok) return;
+      idbDel('tt_file').then(function () { ttRefresh(); toast('已還原'); });
+    });
+  };
+  if ($id('ttResetBtn')) $id('ttResetBtn').onclick = function () {
+    showConfirm('還原出廠預設時間表？（上傳的圖片版也一併移除）').then(function (ok) {
+      if (!ok) return;
+      LS.set('timetable', { slots: JSON.parse(JSON.stringify(FIX.timetable)) });
+      idbDel('tt_file').then(function () { ttRefresh(); renderStudy(); toast('已還原預設 ✓'); });
+    });
+  };
+  ttRefresh();
+}
+/* ---- Dashboard：今日 & 明日課堂 ---- */
+function renderTodayClasses() {
+  var box = $id('todayClasses');
+  if (!box) return;
+  var tt = LS.get('timetable', { slots: FIX.timetable.slice() });
+  var slots = tt.slots || [];
+  var now = new Date();
+  var dow = (now.getDay() + 6) % 7; /* 0=一 */
+  function daySlots(d) {
+    return slots.filter(function (s) { return s.d === d; }).sort(function (a, b) { return a.t - b.t; });
+  }
+  var html = [['今日', daySlots(dow)], ['明日', daySlots((dow + 1) % 7)]].map(function (pair) {
+    var label = pair[0], list = pair[1];
+    return '<div class="tc-col"><div class="tc-day">' + label + '（週' + '一二三四五六日'[(label === '今日' ? dow : (dow + 1) % 7)] + '）</div>' +
+      (list.length
+        ? list.map(function (s) {
+            var past = label === '今日' && s.t <= now.getHours();
+            return '<div class="tc-item' + (past ? ' past' : '') + '"><span class="tc-time">' + pad2(s.t) + ':00</span><b>' + esc(s.subj) + '</b><span class="tc-room">' + esc(s.room || '') + (past ? ' · 已完成' : '') + '</span></div>';
+          }).join('')
+        : '<div class="empty-tip">沒有課堂 🎉</div>') + '</div>';
+  }).join('');
+  box.innerHTML = '<div class="tc-grid">' + html + '</div>' +
+    '<div class="form-row" style="margin-top:10px"><button class="ghost" onclick="goPage(\'study\')">📅 前往上傳最新課表</button></div>';
+}
+
+/* ---- 3. 自媒體運營（基於《雙平臺流量分發機制調研報告》規則引擎） ---- */
+var MEDIA_KB = {
+  coreWords: ['深港通勤', '旅行', '川西自駕', '生活美學', '通勤日常', '深港兩地', 'HK上學', '生活vlog', '美食日常', '治癒系生活', '學習日常', 'IELTS備考', '香港生活'],
+  modWords: { heal: ['治癒系', '質感生活', '慢生活', '儀式感'], howto: ['攻略', '乾貨', '指南', '避坑'], emo: ['破防', '淚目', '真實', '溫柔'], sell: ['種草', '好物', '打卡', '推薦'] },
+  emotionWords: ['解壓', '週末', '治癒日常', '儀式感生活', '慢生活日常'],
+  longtail: ['深港通勤攻略', '川西自駕路線', '深港通關日常', 'HK探店', '香港留學日常', 'IELTS 7分攻略'],
+  broadTags: { xhs: ['#生活記錄', '#旅行', '#美食日常', '#vlog', '#學習日常'], dy: ['#生活', '#旅行', '#vlog', '#治愈系'] },
+  goldenHours: {
+    xhs: [{ s: 20, e: 22, w: '晚高峰（最活躍）' }, { s: 12, e: 13.5, w: '午休峰' }, { s: 7, e: 9, w: '早高峰' }],
+    dy: [{ s: 19, e: 22, w: '晚間黃金（最具爆發力）' }, { s: 12, e: 13.5, w: '午休峰' }, { s: 22, e: 25, w: '深夜活躍' }]
+  },
+  styles: {
+    heal: { name: '治癒日常', xhsT: ['{topic}｜{mod}的日常片段', '記錄{topic}的一天｜{emo}', '{topic}，是平凡日子裡的光✨'], dyT: ['{topic}的最後3秒，我看了十遍', '你絕對想不到，{topic}可以這麼治癒'], body: '{scene}\n\n{topic}的日子，最治癒的是這些小瞬間。慢下來，把生活過成自己喜歡的樣子。\n\n你們的{topic}日常是怎樣的？評論區聊聊👇' },
+    howto: { name: '乾貨攻略', xhsT: ['{topic}超全攻略｜看完這篇就夠了', '{topic}避坑指南｜{n}個必知重點', '第一次{topic}？這篇收藏就對了'], dyT: ['{topic}的{N}個坑，我替你踩完了', '30秒帶你看懂{topic}'], body: '{scene}\n\n這篇整理{topic}的全部重點：\n1️⃣ 核心資訊與時間安排\n2️⃣ 必帶物品與注意事項\n3️⃣ 省時省錢小技巧\n\n🌟 先收藏，用的時候找得到。有問題評論區問我～' },
+    emo: { name: '情感共鳴', xhsT: ['{topic}的第{n}天，我學會了這件事', '原來{topic}，藏著這麼多情緒', '寫給也在{topic}的你'], dyT: ['{topic}這件事，我瞞了很久', '如果人生重來，我還會選{topic}嗎'], body: '{scene}\n\n{topic}的日子有高有低，但每次回頭看，都是成長。\n原來所謂堅持，就是一天一天慢慢走。\n\n把這篇送給同在路上的你 🤍' },
+    sell: { name: '種草推薦', xhsT: ['{topic}好去處｜{mod}打卡清單', '不允許你還不知道這個{topic}！', '{topic}｜{n}個值得專程去的地方'], dyT: ['這個{topic}，我願意去一百次', '刷到就是緣分！{topic}寶藏攻略'], body: '{scene}\n\n{topic}真的太值得了！\n📍 亮點一：畫面質感直接拉滿\n📍 亮點二：隨手一拍都是大片\n📍 亮點三：完整攻略我放這了\n\n🌲 收藏起來，下次直接照著去！' }
+  },
+  scenes: { heal: '又是被平凡日子治癒的一天。', howto: '很多朋友問我{topic}怎麼安排，這篇一次講清楚。', emo: '今天想認真聊聊{topic}。', sell: '最近被問爆的{topic}，終於整理好了！' }
+};
+function mediaNextGolden(platform) {
+  var now = new Date();
+  var cur = now.getHours() + now.getMinutes() / 60;
+  var list = MEDIA_KB.goldenHours[platform];
+  for (var i = 0; i < list.length; i++) {
+    if (cur < list[i].s) {
+      return '今天 ' + Math.floor(list[i].s) + ':00（' + list[i].w + '）';
+    }
+  }
+  return '明天 ' + Math.floor(list[0].s) + ':00（' + list[0].w + '）';
+}
+function mediaGenCopy(topic, platform, styleKey, accName) {
+  var st = MEDIA_KB.styles[styleKey] || MEDIA_KB.styles.heal;
+  var mods = MEDIA_KB.modWords[styleKey] || MEDIA_KB.modWords.heal;
+  function fill(tpl, n) {
+    return tpl.replace(/\{topic\}/g, topic)
+      .replace(/\{mod\}/g, mods[n % mods.length])
+      .replace(/\{emo\}/g, MEDIA_KB.emotionWords[n % MEDIA_KB.emotionWords.length])
+      .replace(/\{n\}/g, String(3 + (n * 2) % 7))
+      .replace(/\{N\}/g, String(3 + (n * 2) % 5));
+  }
+  var titles = (platform === 'dy' ? st.dyT : st.xhsT).map(function (t, i) { return fill(t, i); });
+  var scene = (MEDIA_KB.scenes[styleKey] || MEDIA_KB.scenes.heal).replace(/\{topic\}/g, topic);
+  var body = st.body.replace(/\{scene\}/g, scene).replace(/\{topic\}/g, topic);
+  /* 三級標籤：泛詞2 + 長尾2-3 + 專屬1 */
+  var lt = MEDIA_KB.longtail.filter(function (w) { return topic && (w.indexOf(topic.slice(0, 2)) >= 0 || topic.indexOf(w.slice(0, 2)) >= 0); });
+  var tags = (platform === 'xhs'
+    ? ['#' + topic, '#' + topic + '攻略', '#' + (mods[0] || '治癒系')]
+    : ['#' + topic, '#' + (mods[0] || '治愈系')])
+    .concat(lt.length ? lt.slice(0, 2).map(function (w) { return '#' + w; }) : (platform === 'xhs' ? ['#生活記錄', '#香港生活'] : ['#生活', '#旅行記錄']))
+    .concat(MEDIA_KB.broadTags[platform].slice(0, platform === 'xhs' ? 3 : 2))
+    .concat(['#' + (accName || '日常食光機')]);
+  if (platform === 'dy' && tags.length > 5) tags = tags.slice(0, 5);
+  return {
+    titles: titles, body: body, tags: tags,
+    time: mediaNextGolden(platform),
+    cta: platform === 'xhs' ? '🌟 引導「收藏起來」— 小紅書收藏率權重最高（≥5% 合格）' : '🌟 引導「轉發給朋友」— 抖音轉發率權重最高（≥0.5% 合格），結尾加金句落版',
+    tips: platform === 'xhs'
+      ? ['標題核心詞「' + topic + '」已前置 ✓（12-20 字最佳）', '正文前 80 字已含核心詞 ✓（系統判定賽道的節點）', '封面加文字「' + topic + ' Day N」— 會被 OCR 識別參與搜索', '發布時間建議 19:00-22:00（晚高峰），週末下午 14-18 也適合生活類']
+      : ['前 3 秒鉤子：視覺衝擊畫面或懸念字幕（決定完播率）', '節奏卡點剪輯 + 熱門音樂，影片 15-30 秒最佳', '結尾金句落版 + 評論引導（評論率 ≥0.5% 合格）', '發布時間建議 19:00-22:00；與小紅書錯峰 1 小時發布']
+  };
+}
+function mediaSuggest(hasVideo, hasImage, copy, platform) {
+  var out = [];
+  if (copy) {
+    var t0 = copy.titles[0] || '';
+    if (t0.length > 22) out.push(['P0', '標題 ' + t0.length + ' 字偏長 — 小紅書 12-20 字最佳，核心詞務必在前 8 字內']);
+    if (platform === 'xhs' && copy.tags.length < 3) out.push(['P0', '標籤少於 3 個會識別不全 — 建議 3-10 個三級組合（泛詞+長尾+專屬）']);
+    if (platform === 'xhs' && copy.tags.length > 10) out.push(['P0', '標籤超過 10 個有堆砌降權風險 — 刪到 5-8 個']);
+    if (platform === 'dy' && copy.tags.length > 5) out.push(['P1', '抖音標籤 3-5 個即可 — 重點是前 3 秒鉤子不是標籤']);
+    out.push(['P0', platform === 'dy' ? '檢查前 3 秒：是否最強畫面開頭？（完播率 ≥30% 才能晉級流量池）' : '檢查正文前 80 字：第一句是否直接出現核心詞（避免「今天給大家分享」開頭）']);
+  }
+  if (hasVideo) {
+    out.push(['P0', platform === 'dy' ? '影片建議 15-30 秒 + 卡點剪輯 — 抖音完播率是第一權重' : '影片節奏可中等，重點拍完整記錄 — 小紅書看重內容完整與可收藏性']);
+    out.push(['P1', '加字幕：語音會被 ASR 識別成關鍵詞參與推薦，字幕能強化']);
+  }
+  if (hasImage) {
+    out.push(['P1', platform === 'xhs' ? '封面加大字標題（與標題關鍵詞呼應）— 封面文字會被 OCR 識別參與搜索' : '首圖做成視覺衝擊封面（大字+高對比）— 決定點開率']);
+    out.push(['P2', '圖片保持同一濾鏡風格，強化賬號視覺記憶']);
+  }
+  if (!hasVideo && !hasImage) out.push(['P1', '尚未上傳素材 — 上傳後我會針對素材類型給更具體的畫面建議']);
+  out.push(['P2', '黃金時段發布：小紅書 19:00-22:00 ／ 抖音 20:00-22:00（雙平臺錯峰 1 小時）']);
+  out.push(['P2', '同一素材做兩個版本：小紅書版重關鍵詞佈局，抖音版重 3 秒鉤子 — 不要一稿兩發']);
+  return out;
+}
+function initMediaPage(p, acct, platforms) {
+  var P = function (id) { return $id(p + id); };
+  var mediaKey = 'media_name_' + acct;
+  var lastCopy = null;
+  function mediaRecords() {
+    return idbAll().then(function (list) {
+      return list.filter(function (m) { return m.id && m.id.indexOf('media_' + acct + '_') === 0; })
+        .sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+    }).catch(function () { return []; });
+  }
+  function refreshName() {
+    var n = LS.get(mediaKey, platforms.length > 1 ? '日常食光機' : '小紅書賬號');
+    if (P('Name')) P('Name').value = n;
+    var accEl = $id(acct === 'ly' ? 'mediaAccName' : 'bfMediaAccName');
+    if (accEl) accEl.textContent = n;
+    return n;
+  }
+  function renderOut(copy, platform) {
+    var box = P('Out');
+    if (!box) return;
+    if (!copy) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML =
+      '<div class="gen-sec"><div class="gen-lbl">📌 標題（三選一 · 核心詞已前置）</div>' +
+      copy.titles.map(function (t, i) { return '<div class="gen-title">' + (i + 1) + '. ' + esc(t) + ' <span class="gen-len">' + t.length + '字</span></div>'; }).join('') + '</div>' +
+      '<div class="gen-sec"><div class="gen-lbl">📝 正文（前 80 字已埋核心詞）</div><div class="gen-body">' + esc(copy.body).replace(/\n/g, '<br>') + '</div></div>' +
+      '<div class="gen-sec"><div class="gen-lbl">#️⃣ 標籤（' + copy.tags.length + ' 個 · ' + (platform === 'xhs' ? '三級組合：泛詞+長尾+專屬' : '抖音精準 3-5 個') + '）</div><div class="gen-tags">' + copy.tags.map(esc).join(' ') + '</div></div>' +
+      '<div class="gen-sec"><div class="gen-lbl">⏰ 建議發布時間</div><div class="gen-time">' + esc(copy.time) + '</div></div>' +
+      '<div class="gen-sec"><div class="gen-lbl">' + copy.cta + '</div><ul class="gen-tips">' + copy.tips.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="form-row" style="margin-top:8px"><button class="primary" id="' + p + 'CopyBtn">📋 複製全部文案</button></div>';
+    var cp = $id(p + 'CopyBtn');
+    if (cp) cp.onclick = function () {
+      var txt = copy.titles.map(function (t, i) { return '標題' + (i + 1) + '：' + t; }).join('\n') + '\n\n' + copy.body + '\n\n' + copy.tags.join(' ') + '\n\n發布時間：' + copy.time;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function () { toast('文案已複製 ✓'); });
+      } else {
+        var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta);
+        ta.select(); try { document.execCommand('copy'); toast('文案已複製 ✓'); } catch (e) { toast('複製失敗，請手動選取'); }
+        ta.remove();
+      }
+    };
+  }
+  function renderGrid() {
+    var grid = P('Grid');
+    if (!grid) return;
+    mediaRecords().then(function (list) {
+      if (!list.length) { grid.innerHTML = '<div class="empty-tip">尚未上傳素材 — 照片／影片都存在本機 IndexedDB</div>'; return; }
+      grid.innerHTML = list.map(function (m) {
+        var isVid = (m.type || '').indexOf('video') === 0;
+        return '<div class="media-cell" data-mid="' + esc(m.id) + '">' +
+          '<label class="media-pick"><input type="checkbox" data-mid="' + esc(m.id) + '" /><span>選</span></label>' +
+          '<div class="media-thumb" data-mid="' + esc(m.id) + '">' + (isVid ? '▶️' : '🖼') + '</div>' +
+          '<div class="media-name">' + esc(m.name.slice(0, 18)) + '</div>' +
+          '<div class="media-meta">' + (isVid ? '影片' : '圖片') + ' · ' + (m.size > 1048576 ? (m.size / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(m.size / 1024)) + 'KB') + '</div>' +
+          '<button class="row-del" data-mdel="' + esc(m.id) + '" title="刪除">🗑</button></div>';
+      }).join('');
+      $qa('#' + grid.id + ' .media-thumb').forEach(function (th) {
+        th.onclick = function () {
+          mediaRecords().then(function (list) {
+            var m = list.filter(function (x) { return x.id === th.getAttribute('data-mid'); })[0];
+            if (m) window.open(URL.createObjectURL(m.blob), '_blank');
+          });
+        };
+      });
+      $qa('#' + grid.id + ' [data-mdel]').forEach(function (b) {
+        b.onclick = function () {
+          idbDel(b.getAttribute('data-mdel')).then(renderGrid);
+          toast('素材已刪除');
+        };
+      });
+    });
+  }
+  function pickedMedia() {
+    var ids = $qa('#' + (P('Grid') || {}).id + ' .media-pick input:checked').map(function (c) { return c.getAttribute('data-mid'); });
+    return mediaRecords().then(function (list) { return list.filter(function (m) { return ids.indexOf(m.id) >= 0; }); });
+  }
+  var accName = refreshName();
+  if (P('NameBtn')) P('NameBtn').onclick = function () {
+    LS.set(mediaKey, (P('Name').value || '').trim() || '日常食光機');
+    refreshName(); toast('賬號名已儲存 ✓');
+  };
+  if (P('UploadBtn')) P('UploadBtn').onclick = function () { P('FileIn').click(); };
+  if (P('FileIn')) P('FileIn').onchange = function () {
+    var fs = Array.prototype.slice.call(P('FileIn').files || []);
+    if (!fs.length) return;
+    var chain = Promise.resolve();
+    fs.forEach(function (f) {
+      chain = chain.then(function () {
+        return idbAdd({ id: 'media_' + acct + '_' + uid(), name: f.name, type: f.type, size: f.size, date: todayStr(), blob: f });
+      });
+    });
+    chain.then(function () { P('FileIn').value = ''; renderGrid(); toast('已上傳 ' + fs.length + ' 個素材 ✓'); })
+      .catch(function () { toast('上傳失敗（檔案太大或瀏覽器不支援）'); });
+  };
+  if (P('GenBtn')) P('GenBtn').onclick = function () {
+    var topic = (P('Topic').value || '').trim();
+    if (!topic) { toast('請輸入主題／關鍵詞'); return; }
+    var platform = P('Plat') ? P('Plat').value : 'xhs';
+    var style = P('Style').value;
+    lastCopy = mediaGenCopy(topic, platform, style, LS.get(mediaKey, ''));
+    lastCopy.platform = platform;
+    renderOut(lastCopy, platform);
+    toast('✨ 已生成 — 標題/正文/標籤/時段均按「' + (platform === 'xhs' ? '小紅書' : '抖音') + '」流量規則優化');
+  };
+  if (P('SugBtn')) P('SugBtn').onclick = function () {
+    pickedMedia().then(function (sel) {
+      var hasVid = sel.some(function (m) { return (m.type || '').indexOf('video') === 0; });
+      var hasImg = sel.some(function (m) { return (m.type || '').indexOf('image') === 0; });
+      var platform = lastCopy ? lastCopy.platform : (P('Plat') ? P('Plat').value : 'xhs');
+      var items = mediaSuggest(hasVid, hasImg, lastCopy, platform);
+      var box = P('SugOut');
+      if (!box) return;
+      box.innerHTML = items.map(function (x) {
+        return '<div class="sug-item ' + (x[0] === 'P0' ? 'p0' : x[0] === 'P1' ? 'p1' : 'p2') + '"><span class="sug-pri">' + x[0] + '</span>' + esc(x[1]) + '</div>';
+      }).join('');
+    });
+  };
+  renderGrid();
+}
+
+/* ---- 4. 共同日記（兩人共用 · IndexedDB 'diary_' 前綴） ---- */
+var DIARY_MOODS = ['😊', '🥰', '😂', '😭', '😤', '😴', '🤒', '🥳', '😔', '🔥'];
+var diaryPendingFiles = [];
+function diaryRecords() {
+  return idbAll().then(function (list) {
+    return list.filter(function (m) { return m.id && m.id.indexOf('diary_') === 0; })
+      .sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+  }).catch(function () { return []; });
+}
+function renderDiary() {
+  /* 統計 */
+  diaryRecords().then(function (list) {
+    var statsEl = $id('diaryStats');
+    var anniv = LS.get('diary_anniv', '');
+    var days = anniv ? Math.abs(daysUntil(anniv)) + 1 : 0;
+    var mediaCount = 0;
+    list.forEach(function (e) { mediaCount += (e.files || []).length; });
+    if (statsEl) statsEl.textContent = (days ? '在一起第 ' + days + ' 天' : '未設定紀念日') + ' · 已記錄 ' + list.length + ' 天 · ' + mediaCount + ' 個瞬間';
+    if ($id('diaryAnniv')) $id('diaryAnniv').value = anniv;
+    /* 時間軸 */
+    var box = $id('diaryList');
+    if (!box) return;
+    if (!list.length) { box.innerHTML = '<div class="empty-tip">還沒有日記 — 從上面寫下今天的第一篇吧 📔</div>'; return; }
+    box.innerHTML = list.map(function (e) {
+      var p = String(e.date).split('-').map(Number);
+      var wd = new Date(p[0], p[1] - 1, p[2]).getDay();
+      var medias = (e.files || []).map(function (f, i) {
+        var isVid = (f.type || '').indexOf('video') === 0;
+        return '<div class="diary-media" data-eid="' + esc(e.id) + '" data-fi="' + i + '">' + (isVid ? '<span class="dm-play">▶️</span>' : '') + '<img alt="" data-eid="' + esc(e.id) + '" data-fi="' + i + '" /></div>';
+      }).join('');
+      return '<div class="diary-entry" data-eid="' + esc(e.id) + '">' +
+        '<div class="de-head"><span class="de-date">📖 ' + fmtD(e.date) + '（週' + WEEK_ZH[wd] + '）</span><span class="de-mood">' + (e.mood || '😊') + '</span></div>' +
+        (e.text ? '<div class="de-text">' + esc(e.text).replace(/\n/g, '<br>') + '</div>' : '') +
+        (medias ? '<div class="de-media-grid">' + medias + '</div>' : '') +
+        '<div class="de-acts"><button class="ghost" data-dpush="' + esc(e.id) + '" style="padding:4px 12px">📣 推送到自媒體素材庫</button>' +
+        '<button class="row-del" data-ddel="' + esc(e.id) + '">🗑</button></div></div>';
+    }).join('');
+    /* 填充縮略圖 */
+    list.forEach(function (e) {
+      (e.files || []).forEach(function (f, i) {
+        var img = $q('#diaryList img[data-eid="' + e.id + '"][data-fi="' + i + '"]');
+        if (img && (f.type || '').indexOf('image') === 0) {
+          var url = URL.createObjectURL(f.blob);
+          img.onload = function () { URL.revokeObjectURL(url); };
+          img.src = url;
+        } else if (img) {
+          img.closest('.diary-media').classList.add('is-video');
+        }
+      });
+    });
+    /* 事件 */
+    $qa('#diaryList [data-dpush]').forEach(function (b) {
+      b.onclick = function () {
+        var eid = b.getAttribute('data-dpush');
+        var entry = list.filter(function (x) { return x.id === eid; })[0];
+        if (!entry || !(entry.files || []).length) { toast('這篇日記沒有照片/影片可推送'); return; }
+        showConfirm('把這篇日記的 ' + entry.files.length + ' 個素材，推送到 Lok Yi 的自媒體素材庫？').then(function (ok) {
+          if (!ok) return;
+          var chain = Promise.resolve();
+          entry.files.forEach(function (f) {
+            chain = chain.then(function () {
+              return idbAdd({ id: 'media_ly_' + uid(), name: f.name || 'diary', type: f.type, size: f.blob.size, date: todayStr(), blob: f.blob });
+            });
+          });
+          chain.then(function () { toast('✅ 已推送 ' + entry.files.length + ' 個素材到「自媒體運營」'); })
+            .catch(function () { toast('推送失敗'); });
+        });
+      };
+    });
+    $qa('#diaryList [data-ddel]').forEach(function (b) {
+      b.onclick = function () {
+        showConfirm('確定刪除這篇日記？（含照片/影片，無法復原）').then(function (ok) {
+          if (!ok) return;
+          idbDel(b.getAttribute('data-ddel')).then(function () { renderDiary(); toast('已刪除'); });
+        });
+      };
+    });
+    $qa('#diaryList .diary-media').forEach(function (m) {
+      m.onclick = function () {
+        var eid = m.getAttribute('data-eid'), fi = +m.getAttribute('data-fi');
+        var entry = list.filter(function (x) { return x.id === eid; })[0];
+        if (entry && entry.files && entry.files[fi]) {
+          window.open(URL.createObjectURL(entry.files[fi].blob), '_blank');
+        }
+      };
+    });
+  });
+}
+function initDiary() {
+  if ($id('diaryDate')) $id('diaryDate').value = todayStr();
+  var moodRow = $id('diaryMood');
+  if (moodRow && !moodRow.childElementCount) {
+    moodRow.innerHTML = DIARY_MOODS.map(function (m, i) {
+      return '<button class="mood-btn' + (i === 0 ? ' active' : '') + '" data-mood="' + m + '">' + m + '</button>';
+    }).join('');
+    $qa('#diaryMood .mood-btn').forEach(function (b) {
+      b.onclick = function () {
+        $qa('#diaryMood .mood-btn').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+      };
+    });
+  }
+  function renderPending() {
+    var box = $id('diaryPending');
+    if (!box) return;
+    box.innerHTML = diaryPendingFiles.length
+      ? '<span class="src" style="margin:0">待加入：' + diaryPendingFiles.length + ' 個檔案</span>'
+      : '';
+  }
+  if ($id('diaryUploadBtn')) $id('diaryUploadBtn').onclick = function () { $id('diaryFileIn').click(); };
+  if ($id('diaryFileIn')) $id('diaryFileIn').onchange = function () {
+    var fs = Array.prototype.slice.call($id('diaryFileIn').files || []);
+    fs.forEach(function (f) { diaryPendingFiles.push({ name: f.name, type: f.type, blob: f }); });
+    $id('diaryFileIn').value = '';
+    renderPending();
+  };
+  if ($id('diaryAnnivBtn')) $id('diaryAnnivBtn').onclick = function () {
+    LS.set('diary_anniv', ($id('diaryAnniv').value || '').trim());
+    renderDiary(); toast('紀念日已儲存 ✓');
+  };
+  if ($id('diarySaveBtn')) $id('diarySaveBtn').onclick = function () {
+    var d = ($id('diaryDate').value || '').trim();
+    var t = ($id('diaryText').value || '').trim();
+    if (!d) { toast('請選擇日期'); return; }
+    if (!t && !diaryPendingFiles.length) { toast('寫點字或加入照片吧'); return; }
+    var mood = ($q('#diaryMood .mood-btn.active') || {}).getAttribute ? $q('#diaryMood .mood-btn.active').getAttribute('data-mood') : '😊';
+    var rec = { id: 'diary_' + uid(), date: d, mood: mood, text: t, files: diaryPendingFiles };
+    idbAdd(rec).then(function () {
+      diaryPendingFiles = [];
+      $id('diaryText').value = '';
+      renderPending(); renderDiary();
+      toast('📔 日記已寫入');
+    }).catch(function () { toast('儲存失敗（檔案太大？）'); });
+  };
+  renderDiary();
+}
+
+/* ============================================================
    匯出 / 重設 / PWA 安裝
    ============================================================ */
 function initGlobal() {
@@ -2431,6 +3064,8 @@ function renderAll() {
   renderDDay(); renderCalendar(); renderGpaCalc();
   /* 🆕 v2.2 */
   renderAnnouncement();
+  /* 🆕 v2.3 */
+  renderTodayClasses();
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -2467,11 +3102,15 @@ document.addEventListener('DOMContentLoaded', function () {
   /* 🆕 v2.2 */
   initContent(); initSync(); renderCmDl(); renderCmDd();
   initHelp();
+  /* 🆕 v2.3 */
+  initTimetableUpload(); initMediaPage('media', 'ly', ['xhs', 'dy']);
+  initMediaPage('bfMedia', 'bf', ['xhs']); initDiary();
 
   /* 初始帳號顯示 */
   $qa('.acct-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-acct') === ACCT); });
   $qa('[data-account]').forEach(function (el) {
-    el.style.display = (el.getAttribute('data-account') === ACCT) ? '' : 'none';
+    var a = el.getAttribute('data-account');
+    el.style.display = (a === 'shared' || a === ACCT) ? '' : 'none';
   });
   renderSidebarIdentity();
   renderAll();

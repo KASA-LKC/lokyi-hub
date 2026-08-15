@@ -812,3 +812,80 @@ html[data-theme="dark"] .sync-status { background: #1c222e; border-color: var(--
 .ig-step { font-size: 12.8px; color: var(--ink); line-height: 1.7; padding-left: 4px; }
 .ig-step b { color: var(--red); }
 .ig-note { font-size: 12px; color: var(--mut); line-height: 1.65; margin-top: 8px; background: var(--amber-soft); border-radius: 8px; padding: 8px 10px; }
+
+/* ============================================================
+   🆕 v2.3 新增樣式：課表上傳 / 今日課堂 / 自媒體 / 共同日記
+   ============================================================ */
+/* 課表上傳 */
+.tt-upload { margin-bottom: 14px; padding: 12px; background: #f9fafb; border: 1px dashed var(--line); border-radius: 12px; }
+html[data-theme="dark"] .tt-upload { background: #1c222e; }
+.tt-preview-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+.tt-preview-box { text-align: center; }
+.tt-img { max-width: 100%; max-height: 420px; border-radius: 10px; border: 1px solid var(--line); }
+.tt-embed { width: 100%; height: 420px; border-radius: 10px; border: 1px solid var(--line); }
+
+/* 今日課堂 */
+.tc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .tc-grid { grid-template-columns: 1fr; } }
+.tc-col { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.tc-day { font-weight: 800; font-size: 13px; color: var(--red); margin-bottom: 8px; }
+.tc-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; font-size: 12.5px; margin-bottom: 4px; background: #f9fafb; }
+.tc-item.past { opacity: .5; }
+html[data-theme="dark"] .tc-item { background: #1c222e; }
+.tc-time { font-weight: 700; color: var(--mut); font-variant-numeric: tabular-nums; }
+.tc-room { color: var(--mut); font-size: 11.5px; margin-left: auto; }
+
+/* 自媒體 */
+.gen-out { margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: #f9fafb; }
+html[data-theme="dark"] .gen-out { background: #1c222e; }
+.gen-sec { margin-bottom: 12px; }
+.gen-lbl { font-size: 12px; font-weight: 800; color: var(--red); margin-bottom: 6px; }
+.gen-title { font-size: 13.5px; font-weight: 600; padding: 6px 8px; background: var(--card); border-radius: 8px; margin-bottom: 4px; }
+html[data-theme="dark"] .gen-title { background: #232b3a; }
+.gen-len { float: right; font-size: 10.5px; color: var(--mut); font-weight: 400; }
+.gen-body { font-size: 13px; line-height: 1.75; padding: 10px 12px; background: var(--card); border-radius: 10px; }
+html[data-theme="dark"] .gen-body { background: #232b3a; }
+.gen-tags { font-size: 12.5px; color: var(--red-2); line-height: 1.9; word-break: break-all; }
+.gen-time { font-size: 13px; font-weight: 700; }
+.gen-tips { margin: 4px 0 0 18px; font-size: 12px; color: var(--mut); line-height: 1.8; }
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 10px; }
+.media-cell { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 8px; text-align: center; }
+.media-thumb { height: 80px; border-radius: 8px; background: linear-gradient(135deg, var(--red-soft), #f3f4f6); display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; }
+html[data-theme="dark"] .media-thumb { background: linear-gradient(135deg, #2a1218, #1c222e); }
+.media-name { font-size: 11.5px; font-weight: 600; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-meta { font-size: 10.5px; color: var(--mut); }
+.media-cell .row-del { position: absolute; top: 4px; right: 4px; }
+.media-pick { position: absolute; top: 4px; left: 4px; display: flex; align-items: center; gap: 3px; font-size: 10px; background: rgba(255,255,255,.9); border-radius: 6px; padding: 1px 5px; cursor: pointer; }
+html[data-theme="dark"] .media-pick { background: rgba(28,34,46,.9); }
+.media-pick input { width: 12px; height: 12px; }
+.sug-out { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.sug-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 10px; font-size: 12.8px; line-height: 1.6; border: 1px solid var(--line); }
+.sug-item.p0 { background: #fef2f2; border-color: #fecaca; }
+.sug-item.p1 { background: var(--amber-soft); border-color: #fde68a; }
+.sug-item.p2 { background: #f0f9ff; border-color: #bae6fd; }
+html[data-theme="dark"] .sug-item.p0 { background: #2a1418; border-color: #7f1d1d; }
+html[data-theme="dark"] .sug-item.p1 { background: #2a2210; border-color: #713f12; }
+html[data-theme="dark"] .sug-item.p2 { background: #10202e; border-color: #075985; }
+.sug-pri { font-weight: 800; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: var(--ink); color: var(--bg); flex-shrink: 0; }
+.kb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.kb-item { font-size: 12.3px; line-height: 1.75; padding: 10px 12px; background: #f9fafb; border: 1px solid var(--line); border-radius: 10px; color: var(--mut); }
+.kb-item b { color: var(--ink); }
+html[data-theme="dark"] .kb-item { background: #1c222e; }
+
+/* 共同日記 */
+.mood-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.mood-btn { font-size: 19px; padding: 4px 7px; border-radius: 9px; border: 1.5px solid transparent; background: transparent; cursor: pointer; transition: all .12s; }
+.mood-btn.active { border-color: var(--red); background: var(--red-soft); transform: scale(1.15); }
+.diary-list { display: flex; flex-direction: column; gap: 14px; }
+.diary-entry { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.de-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.de-date { font-weight: 800; font-size: 13.5px; color: var(--red); }
+.de-mood { font-size: 20px; }
+.de-text { font-size: 13px; line-height: 1.75; color: var(--ink); margin-bottom: 8px; }
+.de-media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.diary-media { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #f3f4f6; cursor: pointer; }
+html[data-theme="dark"] .diary-media { background: #1c222e; }
+.diary-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.diary-media.is-video img { opacity: .15; }
+.dm-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+.de-acts { display: flex; gap: 8px; align-items: center; }

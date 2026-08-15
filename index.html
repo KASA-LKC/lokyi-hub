@@ -58,6 +58,7 @@
     <a href="#" class="nav-item" data-target="todos" data-account="ly"><span class="ico">✅</span><span>待辦 & 提醒</span></a>
     <a href="#" class="nav-item" data-target="library" data-account="ly"><span class="ico">📎</span><span>資源筆記庫</span></a>
     <a href="#" class="nav-item" data-target="ip" data-account="ly"><span class="ico">🎥</span><span>我的社交IP</span></a>
+    <a href="#" class="nav-item" data-target="media" data-account="ly"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書+抖音</span></a>
     <a href="#" class="nav-item" data-target="ly_profile_edit" data-account="ly"><span class="ico">👤</span><span>📝 更新個人檔案</span></a>
     <a href="#" class="nav-item" data-target="content" data-account="ly"><span class="ico">⚙️</span><span>內容管理中心</span></a>
 
@@ -70,7 +71,10 @@
     <a href="#" class="nav-item" data-target="bf_timeline" data-account="bf"><span class="ico">⏰</span><span>申請時間節點倒計時</span></a>
     <a href="#" class="nav-item" data-target="bf_guide" data-account="bf"><span class="ico">📘</span><span>報名操作說明書</span></a>
     <a href="#" class="nav-item" data-target="bf_career" data-account="bf"><span class="ico">🎯</span><span>職業規劃｜求職｜行業</span></a>
+    <a href="#" class="nav-item" data-target="bf_media" data-account="bf"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書</span></a>
     <a href="#" class="nav-item" data-target="bf_profile_edit" data-account="bf"><span class="ico">👤</span><span>更新個人檔案</span></a>
+    <div class="nav-group-label">— 共用 —</div>
+    <a href="#" class="nav-item" data-target="diary" data-account="shared"><span class="ico">📔</span><span>我們的共同日記</span></a>
   </nav>
 
   <div class="sidebar-foot">
@@ -161,6 +165,13 @@
       <div class="card-title">🎯 重大節點倒數（D-Day）</div>
       <div id="ddayRow" class="dday-row"></div>
       <div class="src">自動隱藏已過期節點 · 資料來源：Academic Registry / SHTM / SAO 通告</div>
+    </div>
+
+    <!-- 🆕 v2.3：今日 & 明日課堂速覽 -->
+    <div class="card">
+      <div class="card-title">📅 今日 & 明日課堂</div>
+      <div id="todayClasses" class="today-classes"></div>
+      <div class="src">來源：「學習進度追蹤」頁的時間表 — 在該頁上傳最新課表後這裏自動更新</div>
     </div>
 
     <div class="grid-2">
@@ -874,8 +885,31 @@
 
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">📅 本週時間表</div>
+        <div class="card-title">📅 本週時間表 <span id="ttSrc" class="src" style="margin:0"></span></div>
+
+        <!-- 🆕 v2.3：上傳最新時間表 -->
+        <div class="tt-upload">
+          <div class="form-row">
+            <input id="ttPaste" placeholder="粘貼課表文本（例：Mon 10:00-12:00 HTM3201 酒店營運管理｜QT308，每行一節）" />
+            <button class="ghost" id="ttParseBtn">🧠 解析文字</button>
+            <button class="ghost" id="ttUploadBtn">🖼 上傳圖片/PDF</button>
+            <input type="file" id="ttFile" accept="image/*,.pdf" hidden />
+            <button class="ghost" id="ttResetBtn" title="清除上傳版,還原可編輯表格">⟲ 還原預設</button>
+          </div>
+          <div id="ttPreview" class="tt-preview" hidden>
+            <div class="tt-preview-head">
+              <b>📄 最新上傳版時間表</b>
+              <div>
+                <button class="ghost" id="ttViewBtn" style="padding:4px 10px">🔍 放大查看</button>
+                <button class="ghost" id="ttDelBtn" style="padding:4px 10px">🗑 移除</button>
+              </div>
+            </div>
+            <div id="ttPreviewBox" class="tt-preview-box"></div>
+          </div>
+        </div>
+
         <div id="timetableGrid" class="timetable-grid"></div>
+        <div class="src">來源：學校時間表。上傳圖片/PDF 後自動取代下方表格顯示；粘貼文字可自動解析填入可編輯表格；點格子可手動修改。</div>
       </div>
 
       <div class="card">
@@ -1022,6 +1056,145 @@
       </div>
       <div id="syncStatus" class="sync-status"></div>
       <div class="src">Token 只儲存在你本機瀏覽器（lyhub_gh_token），不會傳給任何第三方；雲端內容 = 「匯出所有資料」的完整 JSON。</div>
+    </div>
+  </section>
+
+  <!-- ===== 🆕 模塊：自媒體運營（Lok Yi · 小紅書+抖音） ===== -->
+  <section class="page" data-account="ly" id="page-media">
+    <div class="card">
+      <div class="card-title">📣 自媒體運營管理 · <span id="mediaAccName">日常食光機</span></div>
+      <div class="form-row" style="margin-top:8px">
+        <input id="mediaName" placeholder="賬號名（例：日常食光機）" style="max-width:220px" />
+        <button class="ghost" id="mediaNameBtn">💾 儲存賬號名</button>
+        <span class="src" style="margin:0">平台：<b>小紅書 + 抖音</b> · 內容配基建議：審美生活 45% ／ 美食日常 30% ／ 關係敘事 25%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧠 智能文案生成器（雙平臺規則引擎 · 基於流量分發調研）</div>
+      <div class="form-row">
+        <input id="mediaTopic" placeholder="主題／關鍵詞（例：深港通勤第30天 / 川西路線 / HK探店）" />
+        <select id="mediaPlat"><option value="xhs">小紅書版</option><option value="dy">抖音版</option></select>
+        <select id="mediaStyle">
+          <option value="heal">治癒日常</option><option value="howto">乾貨攻略</option>
+          <option value="emo">情感共鳴</option><option value="sell">種草推薦</option>
+        </select>
+        <button class="primary" id="mediaGenBtn">✨ 生成文案</button>
+      </div>
+      <div id="mediaOut" class="gen-out" hidden></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🖼 素材庫（照片／影片 · 存本機）</div>
+      <div class="form-row">
+        <button class="ghost" id="mediaUploadBtn">＋ 上傳素材</button>
+        <input type="file" id="mediaFileIn" accept="image/*,video/*" multiple hidden />
+        <span class="src" style="margin:0">勾選素材後，文案生成與改良建議會針對所選素材優化</span>
+      </div>
+      <div id="mediaGrid" class="media-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 改良建議（P0/P1/P2 優先級 · 引擎自動檢查）</div>
+      <div class="form-row">
+        <button class="primary" id="mediaSugBtn">🔍 分析我的素材 + 文案</button>
+      </div>
+      <div id="mediaSugOut" class="sug-out"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 運營知識速查（雙平臺流量分發調研精華）</div>
+      <div class="kb-grid">
+        <div class="kb-item"><b>🔥 小紅書</b>搜索長尾 40-60% · 標題核心詞前置（12-20字）· 正文前80字埋詞 · 三級標籤 3-10個 · <b>收藏率為王</b>（≥5%）· 黃金時段 20:00-22:00</div>
+        <div class="kb-item"><b>⚡ 抖音</b>信息流爆發 24-72h · <b>前3秒鉤子決定完播率</b>（≥30%）· 完播&gt;互動&gt;轉發 · <b>轉發率為王</b>（≥0.5%）· 標籤 3-5個 · 黃金時段 19:00-22:00</div>
+        <div class="kb-item"><b>📆 頻率</b>起號期（前4週）：小紅書 3-4→5-7篇/週，抖音 3-4→4-5條/週；穩定期品質優先；每日上限3篇</div>
+        <div class="kb-item"><b>🎯 一套素材兩套優化</b>小紅書首發吃長尾（19:00發），抖音錯峰1小時（20:00發）衝爆發；互動引導：小紅書「收藏起來」／抖音「轉發給朋友」</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 🆕 模塊：自媒體運營（Austin · 小紅書） ===== -->
+  <section class="page" data-account="bf" id="page-bf_media">
+    <div class="card">
+      <div class="card-title">📣 自媒體運營管理 · <span id="bfMediaAccName">小紅書賬號</span></div>
+      <div class="form-row" style="margin-top:8px">
+        <input id="bfMediaName" placeholder="賬號名" style="max-width:220px" />
+        <button class="ghost" id="bfMediaNameBtn">💾 儲存賬號名</button>
+        <span class="src" style="margin:0">平台：<b>小紅書</b> · 建議方向：學習日常／港漂生活／數據分析乾貨</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧠 智能文案生成器（小紅書規則引擎）</div>
+      <div class="form-row">
+        <input id="bfMediaTopic" placeholder="主題／關鍵詞（例：HKCC學習日常 / IELTS備考 / 統計學筆記）" />
+        <select id="bfMediaStyle">
+          <option value="heal">治癒日常</option><option value="howto">乾貨攻略</option>
+          <option value="emo">情感共鳴</option><option value="sell">種草推薦</option>
+        </select>
+        <button class="primary" id="bfMediaGenBtn">✨ 生成文案</button>
+      </div>
+      <div id="bfMediaOut" class="gen-out" hidden></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🖼 素材庫（照片／影片 · 存本機）</div>
+      <div class="form-row">
+        <button class="ghost" id="bfMediaUploadBtn">＋ 上傳素材</button>
+        <input type="file" id="bfMediaFileIn" accept="image/*,video/*" multiple hidden />
+      </div>
+      <div id="bfMediaGrid" class="media-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 改良建議</div>
+      <div class="form-row">
+        <button class="primary" id="bfMediaSugBtn">🔍 分析我的素材 + 文案</button>
+      </div>
+      <div id="bfMediaSugOut" class="sug-out"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 小紅書運營速查</div>
+      <div class="kb-grid">
+        <div class="kb-item"><b>🔥 檢索邏輯</b>標題核心詞前置（12-20字）· 正文前80字埋詞 · 封面文字會被 OCR 識別 · 文末 #標籤 3-10 個（第一個權重最高）</div>
+        <div class="kb-item"><b>⭐ 權重</b>收藏率最高（≥5%合格）→ 評論率 ≥0.5% → 點讚率 ≥3% · 優質筆記 6-12 個月持續搜索流量</div>
+        <div class="kb-item"><b>📆 時段</b>早高峰 7-9 · 午休 12-13:30 · <b>晚高峰 20-23（最活躍）</b> · 週末 9-11 & 14-18 適合生活類</div>
+        <div class="kb-item"><b>🚫 避坑</b>標籤堆砌&gt;15個 · 無關標籤 · 刪高曝光筆記 · 一天多條同質內容 · 標題黨</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 🆕 模塊：共同日記（兩人共用） ===== -->
+  <section class="page" data-account="shared" id="page-diary">
+    <div class="card">
+      <div class="card-title">📔 我們的共同日記 · <span id="diaryStats"></span></div>
+      <div class="form-row" style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)">在一起的日子（紀念日）
+          <input id="diaryAnniv" type="date" style="width:auto" />
+        </label>
+        <button class="ghost" id="diaryAnnivBtn">💾 儲存紀念日</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">✍️ 記錄今天</div>
+      <div class="form-row">
+        <input id="diaryDate" type="date" />
+        <div id="diaryMood" class="mood-row"></div>
+      </div>
+      <textarea id="diaryText" rows="3" placeholder="今天的心情、發生的事…" style="margin-top:10px"></textarea>
+      <div class="form-row" style="margin-top:10px">
+        <button class="ghost" id="diaryUploadBtn">📷 加入照片／影片</button>
+        <input type="file" id="diaryFileIn" accept="image/*,video/*" multiple hidden />
+        <div id="diaryPending" class="mood-row" style="flex:1"></div>
+        <button class="primary" id="diarySaveBtn">💾 寫入日記</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📖 我們的時光軸</div>
+      <div id="diaryList" class="diary-list"></div>
     </div>
   </section>
 
