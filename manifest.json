@@ -1,0 +1,17 @@
+{
+  "name": "Lok Yi Hub · 學生綜合管理平台",
+  "short_name": "Lok Yi Hub",
+  "description": "Lok Yi & Austin 專屬的學習、求職、升學、行政一體化平台",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f6f8",
+  "theme_color": "#83001A",
+  "lang": "zh-Hant-HK",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
