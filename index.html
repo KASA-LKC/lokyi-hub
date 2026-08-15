@@ -102,6 +102,7 @@
         🔔<span class="badge" id="bellBadge" hidden>0</span>
       </button>
       <button class="ghost-btn" id="themeBtn" title="深色 / 淺色模式切換">🌗</button>
+      <button class="ghost-btn" id="helpBtn" title="安裝成 App ＋ 開啟通知教學">❓</button>
       <button class="ghost-btn" id="installBtn" hidden>📲 安裝 App</button>
       <button class="ghost-btn" id="resetDataBtn" title="清除本地資料">⟲ 重設</button>
     </div>
@@ -1342,6 +1343,40 @@
     <div class="modal-btns">
       <button class="primary" id="confirmOkBtn">確定</button>
       <button class="ghost" id="confirmCancelBtn">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== 🆕 v2.2.1：安裝教學 Modal ============== -->
+<div class="modal-mask" id="helpModal" hidden>
+  <div class="modal-box help-box" role="dialog" aria-modal="true">
+    <div class="help-title">📲 安裝成 App ＋ 開啟通知</div>
+
+    <div class="ig-block">
+      <div class="ig-head">📱 iPhone / iPad（必須用 Safari 開，Chrome 不行）</div>
+      <div class="ig-step"><b>1.</b> Safari 打開本網址</div>
+      <div class="ig-step"><b>2.</b> 點底欄<b>中間的「分享」按鈕</b> ⬆️（帶向上箭頭的正方形圖示）</div>
+      <div class="ig-step"><b>3.</b> 向下滾動 → 點 <b>「加入主畫面」</b>（Add to Home Screen）</div>
+      <div class="ig-step"><b>4.</b> 右上角 <b>「新增」</b> → 主畫面出現紅色 LY 圖示 ✅</div>
+      <div class="ig-note">⚠️ iPhone 沒有「下載」按鈕是 Apple 的規則 —「加入主畫面」就等於安裝。開通知需 iOS 16.4+，且要從主畫面圖示打開 App，再點 🔔 →「啟用瀏覽器通知」→ 允許。</div>
+    </div>
+
+    <div class="ig-block">
+      <div class="ig-head">🤖 Android（用 Chrome 開）</div>
+      <div class="ig-step"><b>1.</b> Chrome 打開本網址</div>
+      <div class="ig-step"><b>2.</b> 右上角 <b>⋮</b> → <b>「安裝應用程式」</b>（或「新增至主畫面」）；有時頂欄會直接出現 <b>「📲 安裝 App」</b>按鈕，點它即可</div>
+      <div class="ig-step"><b>3.</b> 開通知：App 內點 🔔 →「啟用瀏覽器通知」→ 允許</div>
+    </div>
+
+    <div class="ig-block">
+      <div class="ig-head">💻 Windows / Mac（Chrome 或 Edge）</div>
+      <div class="ig-step"><b>1.</b> 打開本網址，看<b>地址列右側</b>的安裝圖示（⊕ 或小螢幕圖示）→ 點「安裝」</div>
+      <div class="ig-step"><b>2.</b> 之後從開始選單／啟動台打開，是獨立視窗 App</div>
+    </div>
+
+    <div class="ig-note" style="margin-top:10px">安裝後：離線可用 ✅ · 通知提醒 ✅ · 配合「⚙️ 內容管理中心 → ☁️ 雲同步」多裝置資料一致 ✅</div>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="primary" id="helpCloseBtn">明白了</button>
     </div>
   </div>
 </div>

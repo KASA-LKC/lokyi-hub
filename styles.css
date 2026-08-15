@@ -803,3 +803,12 @@ html[data-theme="dark"] #annText { background: #1f2532; border-color: var(--line
 }
 html[data-theme="dark"] .sync-status { background: #1c222e; border-color: var(--line); }
 #ghToken, #gistIdInput { font-variant-numeric: tabular-nums; }
+
+/* ---- 🆕 v2.2.1：安裝教學 Modal ---- */
+.help-box { width: min(560px, 92vw); max-height: 84vh; overflow-y: auto; text-align: left; }
+.help-title { font-size: 16.5px; font-weight: 800; color: var(--red); margin-bottom: 12px; text-align: center; }
+.ig-block { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+.ig-head { font-size: 13.5px; font-weight: 800; color: var(--ink); margin-bottom: 8px; }
+.ig-step { font-size: 12.8px; color: var(--ink); line-height: 1.7; padding-left: 4px; }
+.ig-step b { color: var(--red); }
+.ig-note { font-size: 12px; color: var(--mut); line-height: 1.65; margin-top: 8px; background: var(--amber-soft); border-radius: 8px; padding: 8px 10px; }

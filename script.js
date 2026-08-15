@@ -2359,6 +2359,17 @@ function initSync() {
   }
 }
 
+/* ---- 8. 安裝教學 Modal ---- */
+function initHelp() {
+  var b = $id('helpBtn'), m = $id('helpModal');
+  if (!b || !m) return;
+  b.onclick = function () { m.hidden = false; };
+  var c = $id('helpCloseBtn');
+  if (c) c.onclick = function () { m.hidden = true; };
+  m.addEventListener('click', function (e) { if (e.target === m) m.hidden = true; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !m.hidden) m.hidden = true; });
+}
+
 /* ============================================================
    匯出 / 重設 / PWA 安裝
    ============================================================ */
@@ -2455,6 +2466,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initTheme(); initImport(); initSearch(); initCalendar(); initGpaCalc(); initPrintResume();
   /* 🆕 v2.2 */
   initContent(); initSync(); renderCmDl(); renderCmDd();
+  initHelp();
 
   /* 初始帳號顯示 */
   $qa('.acct-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-acct') === ACCT); });
