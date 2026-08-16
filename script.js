@@ -13,7 +13,7 @@ var $qa = function (s, r) { return Array.prototype.slice.call((r || document).qu
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-    return { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' }[c];
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
 }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -2415,7 +2415,7 @@ function initPrintResume() {
     if (!txt.trim()) { toast('請先生成簡歷再列印'); return; }
     var w = window.open('', '_blank');
     if (!w) { toast('請允許彈出視窗以使用列印功能'); return; }
-    var safe = txt.replace(/[&<>]/g, function (c) { return { '&': '&', '<': '<', '>': '>' }[c]; });
+    var safe = txt.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
     w.document.write('<html><head><meta charset="utf-8"><title>Resume — Lok Yi Chan</title>' +
       '<style>body{font-family:Arial,"Noto Sans TC",sans-serif;white-space:pre-wrap;padding:36px 40px;font-size:13px;line-height:1.75;color:#111}@media print{body{padding:16px 8px}}</style>' +
       '</head><body>' + safe + '</body></html>');
