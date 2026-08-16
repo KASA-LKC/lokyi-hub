@@ -24,7 +24,14 @@ var LS = {
     try { var v = localStorage.getItem('lyhub_' + k); return v == null ? d : JSON.parse(v); }
     catch (e) { return d; }
   },
-  set: function (k, v) { try { localStorage.setItem('lyhub_' + k, JSON.stringify(v)); } catch (e) {} },
+  set: function (k, v) {
+    try { localStorage.setItem('lyhub_' + k, JSON.stringify(v)); } catch (e) {}
+    /* 🆕 v2.3.2 自動雲推送：任何 LS.set 都觸發防抖（系統 key 除外） */
+    if (k !== '__last_sync' && k !== 'notif_sent' && k !== '__changelog' && k !== 'cross_notifs' && k !== 'device_id') {
+      _lastChangeKey = k;
+      autoSyncSchedule();
+    }
+  },
   del: function (k) { try { localStorage.removeItem('lyhub_' + k); } catch (e) {} },
   keys: function () {
     var out = [];
@@ -35,6 +42,38 @@ var LS = {
     return out;
   }
 };
+
+/* 🆕 v2.3.2 自動雲推送（防抖 3 秒；需已設定 token + gist_id） */
+var _autoSyncTimer = null, _autoSyncing = false, _lastChangeKey = '';
+function changeLabel(key) {
+  var map = {
+    todos: '待辦事項', timetable: '課表', funds: '資助申請', jobs: '求職追蹤',
+    wie: 'WIE 實習', exchk: '交換材料', diary_anniv: '紀念日', regs: '學分進度',
+    announcement: '公告', fix_dl: '學校日程', fix_dday: 'D-Day', theme: '主題',
+    media_name_ly: '自媒體名稱', media_name_bf: '自媒體名稱'
+  };
+  if (map[key]) return map[key];
+  if (key.indexOf('media_') === 0) return '自媒體素材';
+  if (key.indexOf('diary_') === 0) return '日記';
+  if (key.indexOf('ly_') === 0 || key.indexOf('bf_') === 0) return '個人檔案';
+  return 'Dashboard 數據';
+}
+function autoSyncSchedule() {
+  if (!LS.get('gh_token', '') || !LS.get('gist_id', '') || !LS.get('auto_pull', false)) return;
+  clearTimeout(_autoSyncTimer);
+  _autoSyncTimer = setTimeout(function () {
+    if (_autoSyncing) return;
+    _autoSyncing = true;
+    var msg = changeLabel(_lastChangeKey);
+    var body = gistBody();
+    body.files[GIST_FILE] = { content: JSON.stringify(syncPayload(msg)) };
+    ghFetch('PATCH', '/gists/' + gistId(), body).then(function () {
+      LS.set('__last_sync', new Date().toISOString());
+      renderSyncStatus();
+      _autoSyncing = false;
+    }).catch(function () { _autoSyncing = false; });
+  }, 3000);
+}
 
 function pad2(n) { return (n < 10 ? '0' : '') + n; }
 function todayStr() {
@@ -1694,18 +1733,34 @@ function collectNotifs() {
 function renderNotifs() {
   var items = collectNotifs();
   var urgCount = items.filter(function (x) { return x.n >= 0 && x.n <= 7; }).length;
+  /* 🆕 v2.3.3 跨設備通知也計入未讀 */
+  var crossNotifs = LS.get('cross_notifs', []);
+  var unreadCross = crossNotifs.filter(function (c) { return !c.read; }).length;
+  var totalUrg = urgCount + unreadCross;
   if ($id('bellBadge')) {
-    $id('bellBadge').hidden = urgCount === 0;
-    $id('bellBadge').textContent = urgCount;
+    $id('bellBadge').hidden = totalUrg === 0;
+    $id('bellBadge').textContent = totalUrg;
   }
   if ($id('notifList')) {
-    $id('notifList').innerHTML = items.length ? items.map(function (x) {
+    var crossHtml = '';
+    if (crossNotifs.length) {
+      crossHtml = '<div class="cross-notif-section"><div class="cross-notif-head">📱 跨設備更新</div>' +
+        crossNotifs.slice(0, 5).map(function (c) {
+          return '<div class="notif-item cross' + (c.read ? '' : ' unread') + '"><span class="n-ico">📱</span>' +
+            '<div><div class="n-title">' + esc(c.device) + ' 更新了 ' + esc(c.msg) + '</div>' +
+            '<div class="n-sub">' + esc(c.time || '') + '</div></div></div>';
+        }).join('') + '</div>';
+      /* 標記已讀 */
+      var marked = crossNotifs.map(function (c) { c.read = true; return c; });
+      LS.set('cross_notifs', marked);
+    }
+    $id('notifList').innerHTML = crossHtml + (items.length ? items.map(function (x) {
       var cls = x.n < 0 ? 'ok' : x.n <= 7 ? 'urg' : 'warn';
       var lbl = x.n < 0 ? '已過' : x.n === 0 ? '今天' : x.n + ' 天';
       return '<div class="notif-item"><span class="n-ico">' + (x.n <= 7 ? '🚨' : '📆') + '</span>' +
         '<div><div class="n-title">' + esc(x.t) + '</div><div class="n-sub">' + x.tag + ' · ' + fmtD(x.d) + '</div></div>' +
         '<span class="n-days ' + cls + '">' + lbl + '</span></div>';
-    }).join('') : '<div class="empty-tip" style="padding:14px">📭 暫無即將到期的提醒</div>';
+    }).join('') : '<div class="empty-tip" style="padding:14px">📭 暫無即將到期的提醒</div>');
   }
 }
 function maybeBrowserNotify() {
@@ -2483,23 +2538,65 @@ function initContent() {
 var GIST_FILE = 'lyhub-data.json';
 function ghToken() { return LS.get('gh_token', ''); }
 function gistId() { return LS.get('gist_id', ''); }
-function syncPayload() {
+function syncPayload(changeMsg) {
   var data = {};
   LS.keys().forEach(function (k) {
-    if (k === 'notif_sent' || k === 'gh_token' || k === 'gist_id') return;
+    if (k === 'notif_sent' || k === 'gh_token' || k === 'gist_id' || k === '__changelog' || k === 'device_id') return;
     data[k] = LS.get(k, null);
   });
   data.__sync_time = new Date().toISOString();
+  data.device_id = deviceId();
+  if (changeMsg) {
+    data.__changelog = { device: deviceLabel(), time: data.__sync_time, msg: changeMsg, dev_id: deviceId() };
+  } else if (LS.get('__changelog', null)) {
+    data.__changelog = LS.get('__changelog', null);
+  }
   return data;
+}
+function deviceId() {
+  var id = LS.get('device_id', '');
+  if (!id) { id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); LS.set('device_id', id); }
+  return id;
+}
+function deviceLabel() {
+  var ua = navigator.userAgent;
+  var isMobile = /Mobi|Android|iPhone|iPad/i.test(ua);
+  var os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : '未知';
+  return os + (isMobile ? '手機' : '電腦');
 }
 function applySyncData(data, silent) {
   if (!data || typeof data !== 'object') { toast('❌ 雲端資料格式錯誤'); return false; }
+  var remoteChange = data.__changelog || null;
+  var remoteDevId = data.device_id || '';
   delete data.__sync_time;
+  delete data.__changelog;
+  delete data.device_id;
   var keys = Object.keys(data);
   keys.forEach(function (k) { LS.set(k, data[k]); });
   LS.set('__last_sync', new Date().toISOString());
+  if (remoteChange) LS.set('__changelog', remoteChange);
   if (!silent) toast('✅ 已拉取 ' + keys.length + ' 項雲端資料，重新載入…');
+  /* 🆕 v2.3.3 跨設備變更通知：如果是其他設備的變更，彈通知 */
+  if (remoteChange && remoteDevId && remoteDevId !== deviceId()) {
+    var msg = remoteChange.msg || 'Dashboard 已更新';
+    var devName = remoteChange.device || '其他設備';
+    var timeStr = remoteChange.time ? new Date(remoteChange.time).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' }) : '';
+    addCrossDeviceNotif(devName, msg, timeStr);
+  }
   return true;
+}
+function addCrossDeviceNotif(devName, msg, timeStr) {
+  /* 寫入通知面板 */
+  var log = LS.get('cross_notifs', []);
+  log.unshift({ device: devName, msg: msg, time: timeStr, ts: Date.now() });
+  log = log.slice(0, 20);
+  LS.set('cross_notifs', log);
+  renderNotifs();
+  /* 瀏覽器通知 */
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('📱 ' + devName + ' 更新了 Dashboard', { body: msg + (timeStr ? '（' + timeStr + '）' : ''), icon: 'icons/icon-192.png', tag: 'cross_' + Date.now() }); } catch (e) {}
+  }
+  toast('📱 ' + devName + ' 更新了：' + msg);
 }
 function ghFetch(method, path, body) {
   return fetch('https://api.github.com' + path, {
@@ -2595,20 +2692,39 @@ function initSync() {
     }).catch(function (e) { renderSyncStatus(); toast('❌ ' + e.message); });
   };
   renderSyncStatus();
-  /* 自動同步：啟動時靜默檢查（僅當開啟了 auto_pull） */
+  /* 🆕 v2.3.3 自動同步：啟動時 + 每 30 秒定時輪詢 */
   if (LS.get('auto_pull', false) && ghToken() && gistId()) {
-    ghFetch('GET', '/gists/' + gistId()).then(function (g) {
-      var f = g.files && g.files[GIST_FILE];
-      if (!f) return;
-      var remote = null;
-      try { remote = JSON.parse(f.content); } catch (e) { return; }
-      var rt = remote && remote.__sync_time ? Date.parse(remote.__sync_time) : 0;
-      var lt = LS.get('__last_sync', '') ? Date.parse(LS.get('__last_sync', '')) : 0;
-      if (rt > lt) {
-        if (applySyncData(remote, true)) { toast('☁️ 已自動同步雲端最新資料'); setTimeout(function () { location.reload(); }, 600); }
-      }
-    }).catch(function () {});
+    autoPullCheck();
+    setInterval(autoPullCheck, 30000);
   }
+}
+function autoPullCheck() {
+  if (!LS.get('auto_pull', false) || !ghToken() || !gistId()) return;
+  if (_autoSyncing) return; /* 正在推送中，跳過本次輪詢 */
+  ghFetch('GET', '/gists/' + gistId()).then(function (g) {
+    var f = g.files && g.files[GIST_FILE];
+    if (!f) return;
+    var remote = null;
+    try { remote = JSON.parse(f.content); } catch (e) { return; }
+    var rt = remote && remote.__sync_time ? Date.parse(remote.__sync_time) : 0;
+    var lt = LS.get('__last_sync', '') ? Date.parse(LS.get('__last_sync', '')) : 0;
+    if (rt > lt) {
+      var remoteDevId = remote.device_id || '';
+      var isOtherDevice = remoteDevId && remoteDevId !== deviceId();
+      if (applySyncData(remote, true)) {
+        if (isOtherDevice) {
+          /* 其他設備的變更 — 已在 applySyncData 裡彈通知，這裡只刷新 UI */
+          renderAll(); renderTodayClasses();
+          if (typeof renderCalendar === 'function') renderCalendar();
+        } else {
+          /* 自己其他設備的變更 — 靜默刷新 */
+          renderAll(); renderTodayClasses();
+          if (typeof renderCalendar === 'function') renderCalendar();
+          toast('☁️ 已同步其他設備的最新資料');
+        }
+      }
+    }
+  }).catch(function () {});
 }
 
 /* ---- 8. 安裝教學 Modal ---- */
@@ -2657,6 +2773,88 @@ function ttSaveFile(file) {
   idbAdd({ id: 'tt_file', name: file.name, type: file.type || 'image', size: file.size, date: todayStr(), blob: file })
     .then(function () { ttRefresh(); toast('✅ 最新時間表已上傳，全站自動更新'); })
     .catch(function () { toast('❌ 上傳失敗（不支援 IndexedDB？）'); });
+  /* 🆕 v2.3.2 自動 OCR：圖片/PDF 上傳後自動抓取科目資訊 */
+  if (file.type && file.type.indexOf('image') === 0) {
+    ttOcrFile(file);
+  } else if (file.type && file.type.indexOf('pdf') === 0) {
+    ttOcrPdf(file);
+  }
+}
+/* 🆕 v2.3.2 OCR 引擎：圖片 → 文字 → ttParseText → 自動填入 slots */
+function ttOcrStatus(msg) {
+  var el = $id('ttOcrStatus');
+  if (el) { el.textContent = msg; el.hidden = !msg; }
+}
+function ttOcrFile(file) {
+  if (typeof Tesseract === 'undefined') { ttOcrStatus(''); return; }
+  ttOcrStatus('🤖 OCR 識別中…（首次載入需下載中英文語言包，約 10-20 秒）');
+  Tesseract.recognize(file, 'chi_tra+eng', {
+    logger: function (m) {
+      if (m.status === 'recognizing text') ttOcrStatus('🤖 OCR 識別中… ' + Math.round(m.progress * 100) + '%');
+    }
+  }).then(function (res) {
+    ttOcrStatus('');
+    var text = res.data.text || '';
+    if (text.trim()) ttOcrApply(text, file.name);
+    else toast('⚠️ OCR 未識別到文字，可手動粘貼到文字框解析');
+  }).catch(function () {
+    ttOcrStatus(''); toast('⚠️ OCR 識別失敗，可手動粘貼文字解析');
+  });
+}
+function ttOcrPdf(file) {
+  if (typeof pdfjsLib === 'undefined') {
+    ttOcrStatus('🤖 PDF 正在載入引擎…');
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3/build/pdf.min.js';
+    s.onload = function () {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3/build/pdf.worker.min.js';
+      ttOcrPdf(file);
+    };
+    document.head.appendChild(s);
+    return;
+  }
+  ttOcrStatus('🤖 PDF 解析中…');
+  var reader = new FileReader();
+  reader.onload = function () {
+    pdfjsLib.getDocument({ data: new Uint8Array(reader.result) }).promise.then(function (pdf) {
+      var all = [], n = pdf.numPages, done = 0;
+      for (var i = 1; i <= n; i++) {
+        (function (pno) {
+          pdf.getPage(pno).then(function (page) {
+            return page.getTextContent();
+          }).then(function (tc) {
+            all.push(tc.items.map(function (it) { return it.str; }).join(' '));
+            done++;
+            if (done === n) { ttOcrStatus(''); ttOcrApply(all.join('\n'), file.name); }
+          }).catch(function () { done++; if (done === n) { ttOcrStatus(''); if (all.join('').trim()) ttOcrApply(all.join('\n'), file.name); } });
+        })(i);
+      }
+    }).catch(function () { ttOcrStatus(''); toast('⚠️ PDF 解析失敗，可手動粘貼文字'); });
+  };
+  reader.readAsArrayBuffer(file);
+}
+function ttOcrApply(text, srcName) {
+  var slots = ttParseText(text);
+  if (!slots.length) {
+    toast('⚠️ OCR 已識別文字但解析不到課堂（需含「星期+時間」格式）');
+    ttOcrStatus('⚠️ 已識別文字但解析不到課堂 — 可手動粘貼到下方文字框修正');
+    if ($id('ttPaste')) $id('ttPaste').value = text;
+    return;
+  }
+  showConfirm('🤖 從「' + srcName + '」自動識別到 ' + slots.length + ' 節課：\n' +
+    slots.slice(0, 6).map(function (s) { return '  ' + '一二三四五'[s.d] + ' ' + pad2(s.t) + ':00 ' + s.subj + (s.room ? ' ' + s.room : ''); }).join('\n') +
+    (slots.length > 6 ? '\n  …等共 ' + slots.length + ' 節' : '') +
+    '\n\n取代現有時間表？（仍可在表格中手動微調）').then(function (ok) {
+    if (!ok) {
+      if ($id('ttPaste')) $id('ttPaste').value = text;
+      ttOcrStatus('已取消自動填入 — 識別文字已放到下方文字框供你修正');
+      return;
+    }
+    LS.set('timetable', { slots: slots });
+    ttOcrStatus('✅ 自動識別並填入 ' + slots.length + ' 節課');
+    ttRefresh(); renderStudy(); renderTodayClasses();
+    toast('🤖 已自動填入 ' + slots.length + ' 節課 ✓');
+  });
 }
 function ttRefresh() {
   ttLoadFile().then(function (rec) {
@@ -2666,7 +2864,7 @@ function ttRefresh() {
 }
 /* 粘貼文本 → slots 解析器（支援：星期 + 時間 + 科目 + 課室，順序不限） */
 function ttParseText(txt) {
-  var dayMap = { '一': 0, 'mon': 0, '週一': 0, '星期一': 0, '二': 1, 'tue': 1, '週二': 1, '星期二': 1, '三': 2, 'wed': 2, '週三': 2, '星期三': 2, '四': 3, 'thu': 3, '週四': 3, '星期四': 3, '五': 4, 'fri': 4, '週五': 4, '星期五': 4 };
+  var dayMap = { 'monday': 0, 'mon': 0, '一': 0, '週一': 0, '星期一': 0, 'tuesday': 1, 'tue': 1, '二': 1, '週二': 1, '星期二': 1, 'wednesday': 2, 'wed': 2, '三': 2, '週三': 2, '星期三': 2, 'thursday': 3, 'thu': 3, '四': 3, '週四': 3, '星期四': 3, 'friday': 4, 'fri': 4, '五': 4, '週五': 4, '星期五': 4 };
   var lines = txt.split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
   var slots = [];
   lines.forEach(function (line) {
@@ -2675,18 +2873,28 @@ function ttParseText(txt) {
     Object.keys(dayMap).forEach(function (k) {
       if (d === null && low.indexOf(k.toLowerCase()) >= 0) d = dayMap[k];
     });
+    if (d === null) return;
+    /* 先取第一個時間作為起始（無論是範圍 10:00-11:00 還是單點 10:00） */
     var hm = line.match(/(\d{1,2})\s*[:：]\s*(\d{2})/);
-    if (d === null || !hm) return;
+    if (!hm) return;
     var t = +hm[1];
     if (t < 8 || t > 20) return;
-    var rest = line.replace(hm[0], ' ')
-      .replace(/[0-9]{1,2}\s*[:：]\s*[0-9]{2}\s*[-–~至]\s*[0-9]{1,2}\s*[:：]\s*[0-9]{2}/g, ' ')
-      .replace(/(星期|週)?[一二三四五六日]|mon|tue|wed|thu|fri/gi, ' ')
-      .replace(/[|｜,，、]/g, ' ').trim();
-    var parts = rest.split(/\s{1,}/).filter(Boolean);
-    var subj = parts.slice(0, parts.length > 1 ? parts.length - 1 : 1).join(' ');
-    var room = parts.length > 1 ? parts[parts.length - 1] : '';
-    if (subj) slots.push({ d: d, t: t, subj: subj, room: room });
+    /* 剝離所有時間（含範圍）+ 星期詞 + 分隔符 */
+    var rest = line.replace(/\d{1,2}\s*[:：]\s*\d{2}\s*[-–~至到-]\s*\d{1,2}\s*[:：]\s*\d{2}/g, ' ')
+      .replace(/\d{1,2}\s*[:：]\s*\d{2}/g, ' ')
+      .replace(/(星期|週)?[一二三四五六日]|monday|tuesday|wednesday|thursday|friday|mon|tue|wed|thu|fri/gi, ' ')
+      .replace(/[|｜,，、\-–—]/g, ' ')
+      .replace(/\s{2,}/g, ' ').trim();
+    var parts = rest.split(/\s+/).filter(Boolean);
+    var subj, room = '';
+    if (parts.length > 1) {
+      var last = parts[parts.length - 1];
+      var lastIsRoom = /[0-9]/.test(last) || (/^[A-Z]{2,}/.test(last) && last.length <= 8);
+      if (lastIsRoom) { subj = parts.slice(0, -1).join(' '); room = last; }
+      else subj = parts.join(' ');
+    } else subj = parts[0] || '';
+    subj = subj.replace(/^[-–—\s]+/, '').replace(/[-–—\s]+$/, '').trim();
+    if (subj && subj.length > 1) slots.push({ d: d, t: t, subj: subj, room: room });
   });
   return slots;
 }
