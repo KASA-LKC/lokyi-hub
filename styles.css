@@ -915,3 +915,23 @@ html[data-theme="dark"] .atd-tag { background: rgba(131,0,26,.25); border-color:
   .atd-src { display: none; }
   .atd-row { flex-wrap: wrap; row-gap: 2px; }
 }
+
+/* ============================================================
+   🆕 v2.3.2 OCR 狀態條 + 自動同步提示
+   ============================================================ */
+.tt-ocr-status { margin: 8px 0; padding: 8px 12px; border-radius: 10px; background: var(--amber-soft); border: 1px solid rgba(217,119,6,.25); color: var(--amber); font-size: 13px; font-weight: 600; }
+html[data-theme="dark"] .tt-ocr-status { background: rgba(217,119,6,.14); border-color: rgba(217,119,6,.35); color: #f0b870; }
+
+/* ============================================================
+   🆕 v2.3.3 跨設備變更通知
+   ============================================================ */
+.cross-notif-section { border-bottom: 1px solid var(--line); margin-bottom: 6px; padding-bottom: 6px; }
+.cross-notif-head { font-size: 12px; font-weight: 700; color: var(--red); padding: 6px 4px 4px; }
+.notif-item.cross { background: var(--red-soft); border-radius: 8px; padding: 6px 8px; margin-bottom: 3px; }
+.notif-item.cross.unread { border-left: 3px solid var(--red); }
+html[data-theme="dark"] .notif-item.cross { background: rgba(131,0,26,.16); }
+html[data-theme="dark"] .cross-notif-section { border-color: #2a3040; }
+
+/* 版本標籤 */
+.ver-tag { text-align: center; font-size: 11px; color: var(--mut-2); padding: 6px 0 2px; border-top: 1px solid var(--line); margin-top: 6px; }
+html[data-theme="dark"] .ver-tag { color: #5a6378; border-color: #2a3040; }
