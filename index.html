@@ -82,7 +82,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.5</div>
+    <div class="ver-tag" id="verTag">v2.3.6</div>
   </div>
 </aside>
 
@@ -1243,6 +1243,19 @@
         <div class="stat"><div class="stat-num" id="bfStatCredits">33</div><div class="stat-lbl">已修學分</div></div>
         <div class="stat"><div class="stat-num" id="bfStatDeadline">—</div><div class="stat-lbl">距下一截止（天）</div></div>
       </div>
+    </div>
+
+    <!-- 🆕 v2.3.6：公告（Austin · 內容管理中心編輯） -->
+    <div class="card" id="bfAnnCard" hidden>
+      <div class="card-title">📣 公告</div>
+      <div id="bfAnnBox" style="white-space:pre-wrap;font-size:13.5px;line-height:1.75;color:var(--ink)"></div>
+    </div>
+
+    <!-- 🆕 v2.3.6：D-Day 重大節點倒數（Austin） -->
+    <div class="card">
+      <div class="card-title">🎯 重大節點倒數（D-Day）</div>
+      <div id="bfDdayRow" class="dday-row"></div>
+      <div class="src">自動隱藏已過期節點 · 到「內容管理中心」可編輯；到「申請時間節點」頁可新增自訂倒數</div>
     </div>
 
     <div class="grid-2">
