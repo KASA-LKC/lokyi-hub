@@ -27,7 +27,7 @@ var LS = {
   set: function (k, v) {
     try { localStorage.setItem('lyhub_' + k, JSON.stringify(v)); } catch (e) {}
     /* 🆕 v2.3.2 自動雲推送：任何 LS.set 都觸發防抖（系統 key 除外） */
-    if (k !== '__last_sync' && k !== 'notif_sent' && k !== '__changelog' && k !== 'cross_notifs' && k !== 'device_id') {
+    if (k !== '__last_sync' && k !== 'notif_sent' && k !== '__changelog' && k !== 'cross_notifs' && k !== 'device_id' && k.indexOf('__seen_') !== 0) {
       _lastChangeKey = k;
       autoSyncSchedule();
     }
@@ -1744,8 +1744,13 @@ function renderNotifs() {
   if ($id('notifList')) {
     var crossHtml = '';
     if (crossNotifs.length) {
-      crossHtml = '<div class="cross-notif-section"><div class="cross-notif-head">📱 跨設備更新</div>' +
+      crossHtml = '<div class="cross-notif-section"><div class="cross-notif-head">📱 跨設備動態</div>' +
         crossNotifs.slice(0, 5).map(function (c) {
+          if (c.online) {
+            return '<div class="notif-item cross' + (c.read ? '' : ' unread') + '"><span class="n-ico">👋</span>' +
+              '<div><div class="n-title">' + esc(c.device) + ' 上線了</div>' +
+              '<div class="n-sub">' + esc(c.msg || '') + (c.time ? ' · ' + esc(c.time) : '') + '</div></div></div>';
+          }
           return '<div class="notif-item cross' + (c.read ? '' : ' unread') + '"><span class="n-ico">📱</span>' +
             '<div><div class="n-title">' + esc(c.device) + ' 更新了 ' + esc(c.msg) + '</div>' +
             '<div class="n-sub">' + esc(c.time || '') + '</div></div></div>';
@@ -2542,6 +2547,7 @@ function syncPayload(changeMsg) {
   var data = {};
   LS.keys().forEach(function (k) {
     if (k === 'notif_sent' || k === 'gh_token' || k === 'gist_id' || k === '__changelog' || k === 'device_id') return;
+    if (k.indexOf('__seen_') === 0) return; /* 🆕 v2.3.5 上線偵測記錄，僅本機使用 */
     data[k] = LS.get(k, null);
   });
   data.__sync_time = new Date().toISOString();
@@ -2564,6 +2570,48 @@ function deviceLabel() {
   var os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : '未知';
   return os + (isMobile ? '手機' : '電腦');
 }
+/* 🆕 v2.3.5 上線通知：presence.json 獨立文件（與主數據 lyhub-data.json 分開，互不覆蓋） */
+var PRESENCE_FILE = 'presence.json';
+function pushPresence() {
+  if (!ghToken() || !gistId()) return;
+  ghFetch('GET', '/gists/' + gistId()).then(function (g) {
+    var pres = {};
+    var f = g.files && g.files[PRESENCE_FILE];
+    if (f && f.content) { try { pres = JSON.parse(f.content) || {}; } catch (e) { pres = {}; } }
+    /* 清掉超過 1 天的舊記錄，保持文件小巧 */
+    var dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    Object.keys(pres).forEach(function (did) {
+      if (!pres[did] || Date.parse(pres[did].ts || '') < dayAgo) delete pres[did];
+    });
+    pres[deviceId()] = { label: deviceLabel(), ts: new Date().toISOString() };
+    var body = { files: {} };
+    body.files[PRESENCE_FILE] = { content: JSON.stringify(pres) };
+    return ghFetch('PATCH', '/gists/' + gistId(), body);
+  }).catch(function () { /* 靜默失敗：上線打卡失敗不影響使用 */ });
+}
+function checkPresence(g) {
+  /* 輪詢時順便解析 presence.json：其他設備 5 分鐘內上線過 → 彈通知 */
+  var f = g.files && g.files[PRESENCE_FILE];
+  if (!f || !f.content) return;
+  var pres = null;
+  try { pres = JSON.parse(f.content); } catch (e) { return; }
+  if (!pres) return;
+  var now = Date.now();
+  Object.keys(pres).forEach(function (did) {
+    if (did === deviceId()) return; /* 跳過自己 */
+    var p = pres[did];
+    var ts = p && p.ts ? Date.parse(p.ts) : 0;
+    if (!ts || now - ts > 5 * 60 * 1000) return; /* 超過 5 分鐘不算「剛上線」 */
+    var seenKey = '__seen_' + did;
+    var seen = LS.get(seenKey, 0);
+    if (typeof seen === 'string') seen = Date.parse(seen) || 0;
+    if (ts > seen) {
+      LS.set(seenKey, new Date(ts).toISOString());
+      var timeStr = new Date(ts).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' });
+      addCrossDeviceNotif(p.label || '其他設備', '剛剛上線 👋', timeStr, true);
+    }
+  });
+}
 function applySyncData(data, silent) {
   if (!data || typeof data !== 'object') { toast('❌ 雲端資料格式錯誤'); return false; }
   var remoteChange = data.__changelog || null;
@@ -2585,18 +2633,21 @@ function applySyncData(data, silent) {
   }
   return true;
 }
-function addCrossDeviceNotif(devName, msg, timeStr) {
+function addCrossDeviceNotif(devName, msg, timeStr, isOnline) {
   /* 寫入通知面板 */
   var log = LS.get('cross_notifs', []);
-  log.unshift({ device: devName, msg: msg, time: timeStr, ts: Date.now() });
+  log.unshift({ device: devName, msg: msg, time: timeStr, ts: Date.now(), online: !!isOnline });
   log = log.slice(0, 20);
   LS.set('cross_notifs', log);
   renderNotifs();
   /* 瀏覽器通知 */
   if ('Notification' in window && Notification.permission === 'granted') {
-    try { new Notification('📱 ' + devName + ' 更新了 Dashboard', { body: msg + (timeStr ? '（' + timeStr + '）' : ''), icon: 'icons/icon-192.png', tag: 'cross_' + Date.now() }); } catch (e) {}
+    try {
+      var title = isOnline ? '👋 ' + devName + ' 剛剛上線' : '📱 ' + devName + ' 更新了 Dashboard';
+      new Notification(title, { body: msg + (timeStr ? '（' + timeStr + '）' : ''), icon: 'icons/icon-192.png', tag: 'cross_' + Date.now() });
+    } catch (e) {}
   }
-  toast('📱 ' + devName + ' 更新了：' + msg);
+  toast((isOnline ? '👋 ' : '📱 ') + devName + (isOnline ? '：剛剛上線' : ' 更新了：' + msg));
 }
 function ghFetch(method, path, body) {
   return fetch('https://api.github.com' + path, {
@@ -2692,16 +2743,21 @@ function initSync() {
     }).catch(function (e) { renderSyncStatus(); toast('❌ ' + e.message); });
   };
   renderSyncStatus();
-  /* 🆕 v2.3.3 自動同步：啟動時 + 每 30 秒定時輪詢 */
+  /* 🆕 v2.3.3 自動同步：啟動時 + 每 30 秒定時輪詢；🆕 v2.3.5 啟動時上線打卡 */
   if (LS.get('auto_pull', false) && ghToken() && gistId()) {
+    pushPresence();
     autoPullCheck();
     setInterval(autoPullCheck, 30000);
+    /* 每 5 分鐘刷新一次自己的上線時間（保持「在線」狀態） */
+    setInterval(pushPresence, 5 * 60 * 1000);
   }
 }
 function autoPullCheck() {
   if (!LS.get('auto_pull', false) || !ghToken() || !gistId()) return;
   if (_autoSyncing) return; /* 正在推送中，跳過本次輪詢 */
   ghFetch('GET', '/gists/' + gistId()).then(function (g) {
+    /* 🆕 v2.3.5 先檢查有沒有其他設備剛上線 */
+    checkPresence(g);
     var f = g.files && g.files[GIST_FILE];
     if (!f) return;
     var remote = null;
