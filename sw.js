@@ -1,42 +1,40 @@
-
 /* Lok Yi Hub · Service Worker（離線快取） */
-const CACHE = &#x27;lyhub-v30&#x27;;
+const CACHE = 'lyhub-v29';
 const ASSETS = [
-  &#x27;./&#x27;,
-  &#x27;./index.html&#x27;,
-  &#x27;./styles.css&#x27;,
-  &#x27;./script.js&#x27;,
-  &#x27;./manifest.json&#x27;,
-  &#x27;./icons/icon-192.png&#x27;,
-  &#x27;./icons/icon-512.png&#x27;,
-  &#x27;./icons/icon-maskable-512.png&#x27;,
-  &#x27;./icons/apple-touch-icon.png&#x27;
+  './',
+  './index.html',
+  './styles.css',
+  './script.js',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-maskable-512.png',
+  './icons/apple-touch-icon.png'
 ];
 
-self.addEventListener(&#x27;install&#x27;, e =&gt; {
-  e.waitUntil(caches.open(CACHE).then(c =&gt; c.addAll(ASSETS)).then(() =&gt; self.skipWaiting()));
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 
-self.addEventListener(&#x27;activate&#x27;, e =&gt; {
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =&gt; Promise.all(keys.filter(k =&gt; k !== CACHE).map(k =&gt; caches.delete(k))))
-      .then(() =&gt; self.clients.claim())
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener(&#x27;fetch&#x27;, e =&gt; {
-  if (e.request.method !== &#x27;GET&#x27;) return;
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(hit =&gt; {
-      const net = fetch(e.request).then(res =&gt; {
-        if (res &amp;&amp; res.ok &amp;&amp; new URL(e.request.url).origin === location.origin) {
+    caches.match(e.request, { ignoreSearch: true }).then(hit => {
+      const net = fetch(e.request).then(res => {
+        if (res && res.ok && new URL(e.request.url).origin === location.origin) {
           const copy = res.clone();
-          caches.open(CACHE).then(c =&gt; c.put(e.request, copy));
+          caches.open(CACHE).then(c => c.put(e.request, copy));
         }
         return res;
-      }).catch(() =&gt; hit);
+      }).catch(() => hit);
       return hit || net;
     })
   );
 });
-
