@@ -60,7 +60,7 @@
     <a href="#" class="nav-item" data-target="ip" data-account="ly"><span class="ico">🎥</span><span>我的社交IP</span></a>
     <a href="#" class="nav-item" data-target="media" data-account="ly"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書+抖音</span></a>
     <a href="#" class="nav-item" data-target="ly_profile_edit" data-account="ly"><span class="ico">👤</span><span>📝 更新個人檔案</span></a>
-    <a href="#" class="nav-item" data-target="content" data-account="ly"><span class="ico">⚙️</span><span>內容管理中心</span></a>
+    <a href="#" class="nav-item" data-target="content" data-account="shared"><span class="ico">⚙️</span><span>內容管理中心</span></a>
 
     <div class="nav-group-label" data-account="bf">— 男友 Austin · Non-JUPAS —</div>
     <a href="#" class="nav-item" data-target="bf_dash" data-account="bf"><span class="ico">🏠</span><span>男友總覽</span></a>
@@ -82,6 +82,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
+    <div class="ver-tag" id="verTag">v2.3.4</div>
   </div>
 </aside>
 
@@ -898,6 +899,7 @@
             <input type="file" id="ttFile" accept="image/*,.pdf" hidden />
             <button class="ghost" id="ttResetBtn" title="清除上傳版,還原可編輯表格">⟲ 還原預設</button>
           </div>
+          <div id="ttOcrStatus" class="tt-ocr-status" hidden></div>
           <div id="ttPreview" class="tt-preview" hidden>
             <div class="tt-preview-head">
               <b>📄 最新上傳版時間表</b>
@@ -989,7 +991,7 @@
   </section>
 
   <!-- ===== 🆕 模塊 L+：內容管理中心（v2.2） ===== -->
-  <section class="page" data-account="ly" id="page-content">
+  <section class="page" data-account="shared" id="page-content">
     <div class="card">
       <div class="card-title">⚙️ 內容管理中心</div>
       <p style="font-size:13px;color:var(--mut);margin-top:-4px">
@@ -1053,7 +1055,7 @@
       </div>
       <div class="form-row" style="margin-top:6px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)">
-          <input type="checkbox" id="autoPullChk" style="width:auto" /> 開啟自動同步（每次開啟網站自動檢查雲端更新）
+          <input type="checkbox" id="autoPullChk" style="width:auto" /> 開啟自動同步（改動後 3 秒自動推送雲端 + 開啟網站時自動拉取）
         </label>
       </div>
       <div id="syncStatus" class="sync-status"></div>
@@ -1618,6 +1620,7 @@
   <div class="ai-foot">Loki 為本地助手 · 含通知中心 · 含知識庫</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
