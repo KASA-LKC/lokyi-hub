@@ -82,7 +82,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.4</div>
+    <div class="ver-tag" id="verTag">v2.3.5</div>
   </div>
 </aside>
 
@@ -995,7 +995,7 @@
     <div class="card">
       <div class="card-title">⚙️ 內容管理中心</div>
       <p style="font-size:13px;color:var(--mut);margin-top:-4px">
-        所有內容改動<b>即時生效</b>並儲存在本機；配合下方 ☁️ 雲同步，可在手機／電腦／平板之間保持一致 — 網站內容的後續更新全部在這裏完成，毋須再動原始碼。
+        所有內容改動<b>即時生效</b>並儲存在本機；配合雲端同步功能，可在手機／電腦／平板之間保持一致 — 網站內容的後續更新全部在這裏完成，毋須再動原始碼。
       </p>
     </div>
 
@@ -1037,7 +1037,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-account="ly">
       <div class="card-title">☁️ 跨裝置雲同步（GitHub Gist · 私密）</div>
       <p style="font-size:13px;color:var(--mut);margin-top:-4px">
         在任何裝置的瀏覽器輸入<b>同一組 Gist ID</b>，即可推送／拉取全部資料（待辦、日程、公告、履歷、兩個帳號全部內容）。Gist 設為 secret，只有持有 token 的人能存取。
@@ -1055,11 +1055,20 @@
       </div>
       <div class="form-row" style="margin-top:6px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)">
-          <input type="checkbox" id="autoPullChk" style="width:auto" /> 開啟自動同步（改動後 3 秒自動推送雲端 + 開啟網站時自動拉取）
+          <input type="checkbox" id="autoPullChk" style="width:auto" /> 開啟自動同步（改動後 3 秒自動推送雲端 + 每 30 秒自動拉取 + 對方上線/改動通知 👋）
         </label>
       </div>
       <div id="syncStatus" class="sync-status"></div>
       <div class="src">Token 只儲存在你本機瀏覽器（lyhub_gh_token），不會傳給任何第三方；雲端內容 = 「匯出所有資料」的完整 JSON。</div>
+    </div>
+
+    <!-- 🆕 v2.3.5：男友帳號看到的同步說明（雲同步設定由 Lok Yi 帳號統一管理） -->
+    <div class="card" data-account="bf">
+      <div class="card-title">☁️ 雲端同步狀態</div>
+      <p style="font-size:13px;color:var(--mut);margin-top:-4px">
+        雲端同步設定由 <b>Lok Yi 帳號</b>統一管理（⚙️ 內容管理中心 → ☁️ 跨裝置雲同步）。<br>
+        你在本機的改動會自動同步到雲端，對方的更新也會自動送達 — 無需任何手動操作 👍
+      </p>
     </div>
   </section>
 
