@@ -49,7 +49,9 @@ function changeLabel(key) {
   var map = {
     todos: '待辦事項', timetable: '課表', funds: '資助申請', jobs: '求職追蹤',
     wie: 'WIE 實習', exchk: '交換材料', diary_anniv: '紀念日', regs: '學分進度',
-    announcement: '公告', fix_dl: '學校日程', fix_dday: 'D-Day', theme: '主題',
+    announcement: '公告', fix_dl: '學校日程', fix_dday: 'D-Day',
+    bf_announcement: '公告（Austin）', bf_fix_dl: '學校日程（Austin）', bf_fix_dday: 'D-Day（Austin）',
+    theme: '主題',
     media_name_ly: '自媒體名稱', media_name_bf: '自媒體名稱'
   };
   if (map[key]) return map[key];
@@ -310,6 +312,7 @@ function switchAcct(a) {
   renderSidebarIdentity();
   goPage(a === 'ly' ? 'dashboard' : 'bf_dash', { keepSidebar: false });
   renderAll();
+  syncContentAdmin(); /* 🆕 v2.3.6：內容管理編輯器按新賬號重載 */
 }
 
 function renderSidebarIdentity() {
@@ -397,7 +400,7 @@ function renderDashboard() {
 
   /* 緊急 / 即將到期 */
   var items = [];
-  FIX.lyDeadlines.forEach(function (x) { items.push({ t: x.t, d: x.d, src: '日程' }); });
+  getDl('ly').forEach(function (x) { items.push({ t: x.t, d: x.d, src: '日程' }); });
   todos.filter(function (t) { return !t.done && t.due; }).forEach(function (t) { items.push({ t: '📋 ' + t.t, d: t.due, src: '待辦' }); });
   items.forEach(function (x) { x.n = daysUntil(x.d); });
   var urg = items.filter(function (x) { return x.n != null && x.n >= 0 && x.n <= 7; }).sort(function (a, b) { return a.n - b.n; });
@@ -887,7 +890,7 @@ function autoTodoCandidates() {
   var out = [], today = todayStr();
   function add(autoId, t, cat, due, src) { out.push({ autoId: autoId, t: t, cat: cat, due: due, src: src }); }
   /* 1. 學校日程（截止 / 報名 / 選科類；排除「開課」等純事件） */
-  FIX.lyDeadlines.forEach(function (x) {
+  getDl('ly').forEach(function (x) {
     if (!x.d || x.d < today) return;
     if (/開課/.test(x.t)) return;
     add('dl:' + x.t + ':' + x.d, x.t, autoTdCat(x.t), x.d, 'Dashboard · 學校日程');
@@ -1595,7 +1598,8 @@ function initBfCv() {
    ============================================================ */
 function bfAllTimeline() {
   var custom = LS.get('bf_timeline_custom', []);
-  return FIX.bfDeadlines.concat(custom);
+  var base = LS.get('bf_fix_dl', null);
+  return ((base && base.length) ? base : FIX.bfDeadlines).concat(custom);
 }
 function renderBfTimeline() {
   var list = bfAllTimeline().map(function (x) { x.n = daysUntil(x.d); return x; });
@@ -1721,7 +1725,7 @@ function initBfProfile() {
 function collectNotifs() {
   var items = [];
   if (ACCT === 'ly') {
-    FIX.lyDeadlines.forEach(function (x) { items.push({ id: 'lyfix' + x.d + x.t, t: x.t, d: x.d, tag: '日程' }); });
+    getDl('ly').forEach(function (x) { items.push({ id: 'lyfix' + x.d + x.t, t: x.t, d: x.d, tag: '日程' }); });
     LS.get('todos', []).forEach(function (t) { if (!t.done && t.due) items.push({ id: 'todo' + t.t, t: '📋 ' + t.t, d: t.due, tag: '待辦' }); });
   } else {
     bfAllTimeline().forEach(function (x) { items.push({ id: 'bffix' + x.d + x.t, t: x.t, d: x.d, tag: '申請' }); });
@@ -1909,7 +1913,8 @@ function lokiInternalData(q) {
   }
   /* 倒數/截止 */
   if (has('倒數', '截止', 'deadline', '大事', '重要日程')) {
-    var items = FIX.lyDeadlines.map(function (x) { x.n = daysUntil(x.d); return x; })
+    var dlForLoki = ACCT === 'bf' ? bfAllTimeline() : getDl('ly');
+    var items = dlForLoki.map(function (x) { x.n = daysUntil(x.d); return x; })
       .filter(function (x) { return x.n != null && x.n >= 0; }).sort(function (a, b) { return a.n - b.n; }).slice(0, 5);
     return '⏰ 最近的重要節點：\n' + items.map(function (x) { return '· ' + fmtD(x.d) + '（' + daysBadge(x.d) + '）' + x.t; }).join('\n');
   }
@@ -2184,7 +2189,8 @@ function collectSearchItems() {
   LS.get('funds', []).forEach(function (f) { push(f.name || '', '📑 資助申請 · ' + (f.due ? fmtD(f.due) : ''), 'funding', 'ly'); });
   LS.get('bf_subjects', []).forEach(function (s) { push((s.code || '') + ' ' + (s.name || ''), "📚 Austin 科目 · " + (s.status || ''), 'bf_subjects', 'bf'); });
   LS.get('bf_timeline_custom', []).forEach(function (x) { push(x.t, '⏰ Austin 自訂倒數 · ' + fmtD(x.d), 'bf_timeline', 'bf'); });
-  FIX.lyDeadlines.forEach(function (x) { push(x.t, '🗓 固定日程 · ' + fmtD(x.d), 'calendar', 'ly'); });
+  getDl('ly').forEach(function (x) { push(x.t, '🗓 固定日程 · ' + fmtD(x.d), 'calendar', 'ly'); });
+  getDl('bf').forEach(function (x) { push(x.t, '🗓 固定日程 · ' + fmtD(x.d), 'bf_timeline', 'bf'); });
   return out;
 }
 function initSearch() {
@@ -2218,7 +2224,7 @@ function initSearch() {
 }
 
 /* ---- 4. D-Day 重大節點倒數 ---- */
-var DDAY_FIX = [
+FIX.ddayLy = [
   { icon: '📚', t: '正式選科結束', d: '2026-08-25' },
   { icon: '🚨', t: 'WIE 學分轉移截止', d: '2026-08-31' },
   { icon: '🏫', t: 'Sem 1 開課', d: '2026-08-31' },
@@ -2227,30 +2233,41 @@ var DDAY_FIX = [
   { icon: '📑', t: 'TSFS / NLSFT 截止', d: '2026-09-25' },
   { icon: '🎓', t: 'CUHK 碩士優先輪（約）', d: '2026-12-01' }
 ];
+/* 🆕 v2.3.6：Austin 的 D-Day 出廠預設 */
+FIX.ddayBf = [
+  { icon: '🏫', t: 'HKCC Year 2 開學',          d: '2026-09-07' },
+  { icon: '📝', t: 'PolyU Non-JUPAS 開放申請',   d: '2026-09-28' },
+  { icon: '📝', t: 'CityU 開放申請',             d: '2026-10-01' },
+  { icon: '🗣', t: 'IELTS 應考（目標）',         d: '2026-12-20' },
+  { icon: '🚨', t: 'PolyU Non-JUPAS 截止',       d: '2027-01-15' },
+  { icon: '🚨', t: 'CityU Non-JUPAS 截止',       d: '2027-01-15' }
+];
 function renderDDay() {
-  var box = $id('ddayRow');
-  if (!box) return;
-  var items = DDAY_FIX.map(function (x) { return { icon: x.icon, t: x.t, d: x.d, n: daysUntil(x.d) }; })
-    .filter(function (x) { return x.n != null && x.n >= 0; })
-    .sort(function (a, b) { return a.n - b.n; })
-    .slice(0, 6);
-  box.innerHTML = items.length
-    ? items.map(function (x) {
-        return '<div class="dday-card' + (x.n <= 7 ? ' urg' : '') + '" title="' + esc(x.t) + '">' +
-               '<div class="dday-icon">' + x.icon + '</div>' +
-               '<div class="dday-num">' + (x.n === 0 ? '今' : x.n) + '</div>' +
-               '<div class="dday-lbl">天</div>' +
-               '<div class="dday-t">' + esc(x.t) + '</div>' +
-               '<div class="dday-d">' + fmtD(x.d) + '</div></div>';
-      }).join('')
-    : '<div class="empty-tip">目前沒有未來的重大節點 🎉</div>';
+  function ddayHtml(list) {
+    var items = list.map(function (x) { return { icon: x.icon, t: x.t, d: x.d, n: daysUntil(x.d) }; })
+      .filter(function (x) { return x.n != null && x.n >= 0; })
+      .sort(function (a, b) { return a.n - b.n; })
+      .slice(0, 6);
+    return items.length
+      ? items.map(function (x) {
+          return '<div class="dday-card' + (x.n <= 7 ? ' urg' : '') + '" title="' + esc(x.t) + '">' +
+                 '<div class="dday-icon">' + x.icon + '</div>' +
+                 '<div class="dday-num">' + (x.n === 0 ? '今' : x.n) + '</div>' +
+                 '<div class="dday-lbl">天</div>' +
+                 '<div class="dday-t">' + esc(x.t) + '</div>' +
+                 '<div class="dday-d">' + fmtD(x.d) + '</div></div>';
+        }).join('')
+      : '<div class="empty-tip">目前沒有未來的重大節點 🎉</div>';
+  }
+  var b1 = $id('ddayRow');   if (b1) b1.innerHTML = ddayHtml(getDd('ly'));
+  var b2 = $id('bfDdayRow'); if (b2) b2.innerHTML = ddayHtml(getDd('bf'));
 }
 
 /* ---- 5. 月曆總覽 ---- */
 var CALYM = null; /* 當前顯示年月 'YYYY-MM' */
 function calEventsAll() {
   var ev = [];
-  FIX.lyDeadlines.forEach(function (x) { ev.push({ d: x.d, t: x.t, src: '🗓 學校日程' }); });
+  getDl('ly').forEach(function (x) { ev.push({ d: x.d, t: x.t, src: '🗓 學校日程' }); });
   LS.get('todos', []).forEach(function (t) { if (t.due && !t.done) ev.push({ d: t.due, t: '📋 ' + t.t, src: '✅ 待辦 · ' + (t.cat || '') }); });
   LS.get('funds', []).forEach(function (f) { if (f.due) ev.push({ d: f.due, t: '📑 ' + (f.name || '資助申請'), src: '資助截止' }); });
   LS.get('jobs', []).forEach(function (j) { if (j.int) ev.push({ d: j.int, t: '💼 面試 · ' + (j.co || '') + ' ' + (j.pos || ''), src: '求職面試' }); });
@@ -2429,32 +2446,39 @@ function initPrintResume() {
    ============================================================ */
 
 /* ---- 固定內容覆蓋機制（出廠預設 ←→ App 內編輯） ---- */
-var FIX_DL_ORIG = null, DDAY_FIX_ORIG = null;
-function loadFixOverrides() {
-  FIX_DL_ORIG = JSON.parse(JSON.stringify(FIX.lyDeadlines));
-  DDAY_FIX_ORIG = JSON.parse(JSON.stringify(DDAY_FIX));
-  var dl = LS.get('fix_dl', null);
-  if (dl && typeof dl.length === 'number' && dl.length) FIX.lyDeadlines = dl;
-  var dd = LS.get('fix_dday', null);
-  if (dd && typeof dd.length === 'number' && dd.length) DDAY_FIX = dd;
+/* ---- 固定內容覆蓋機制（🆕 v2.3.6：按賬號獨立 · 出廠預設 ←→ App 內編輯）---- */
+/* 出廠預設：FIX.lyDeadlines / FIX.bfDeadlines / FIX.ddayLy / FIX.ddayBf 保持原樣（永遠是預設值，不再被覆蓋） */
+function dlKey()  { return ACCT === 'bf' ? 'bf_fix_dl'       : 'fix_dl'; }
+function ddKey()  { return ACCT === 'bf' ? 'bf_fix_dday'     : 'fix_dday'; }
+function annKey() { return ACCT === 'bf' ? 'bf_announcement' : 'announcement'; }
+/* getDl(acct)/getDd(acct)：讀指定賬號的生效列表；無編輯記錄時回落出廠預設 */
+function getDl(acct) {
+  acct = acct || ACCT;
+  var v = LS.get(acct === 'bf' ? 'bf_fix_dl' : 'fix_dl', null);
+  return (v && typeof v.length === 'number' && v.length) ? v : (acct === 'bf' ? FIX.bfDeadlines : FIX.lyDeadlines);
 }
-function saveDl(list) { LS.set('fix_dl', list); FIX.lyDeadlines = list; }
-function saveDd(list) { LS.set('fix_dday', list); DDAY_FIX = list; }
+function getDd(acct) {
+  acct = acct || ACCT;
+  var v = LS.get(acct === 'bf' ? 'bf_fix_dday' : 'fix_dday', null);
+  return (v && typeof v.length === 'number' && v.length) ? v : (acct === 'bf' ? FIX.ddayBf : FIX.ddayLy);
+}
+function getAnn(acct) { return LS.get((acct || ACCT) === 'bf' ? 'bf_announcement' : 'announcement', ''); }
+function saveDl(list) { LS.set(dlKey(), list); }
+function saveDd(list) { LS.set(ddKey(), list); }
 
 /* ---- 公告 ---- */
 function renderAnnouncement() {
-  var card = $id('annCard'), box = $id('annBox');
-  if (!card || !box) return;
-  var v = LS.get('announcement', '');
-  box.textContent = v;
-  card.hidden = !v.trim();
+  var c1 = $id('annCard'), b1 = $id('annBox');
+  if (c1 && b1) { var v1 = getAnn('ly'); b1.textContent = v1; c1.hidden = !v1.trim(); }
+  var c2 = $id('bfAnnCard'), b2 = $id('bfAnnBox');
+  if (c2 && b2) { var v2 = getAnn('bf'); b2.textContent = v2; c2.hidden = !v2.trim(); }
 }
 
 /* ---- 內容管理：日程編輯器 ---- */
 function renderCmDl() {
   var box = $id('cmDlRows');
   if (!box) return;
-  var list = FIX.lyDeadlines;
+  var list = getDl(ACCT);
   box.innerHTML = list.length ? list.map(function (x, i) {
     return '<div class="cm-row">' +
       '<input value="' + esc(x.t) + '" data-ci="' + i + '" data-cf="t" data-ck="dl" placeholder="標題" />' +
@@ -2467,7 +2491,7 @@ function renderCmDl() {
 function renderCmDd() {
   var box = $id('cmDdRows');
   if (!box) return;
-  var list = DDAY_FIX;
+  var list = getDd(ACCT);
   box.innerHTML = list.length ? list.map(function (x, i) {
     return '<div class="cm-row cm-row-dd">' +
       '<input value="' + esc(x.icon) + '" data-ci="' + i + '" data-cf="icon" data-ck="dd" placeholder="🎯" />' +
@@ -2480,7 +2504,7 @@ function renderCmDd() {
 function bindCmRows(box, kind, afterSave) {
   $qa('input[data-ci]', box).forEach(function (inp) {
     var h = function () {
-      var list2 = JSON.parse(JSON.stringify(kind === 'dl' ? FIX.lyDeadlines : DDAY_FIX));
+      var list2 = JSON.parse(JSON.stringify(kind === 'dl' ? getDl(ACCT) : getDd(ACCT)));
       var i = +inp.getAttribute('data-ci');
       list2[i][inp.getAttribute('data-cf')] = inp.value;
       if (kind === 'dl') saveDl(list2); else saveDd(list2);
@@ -2491,7 +2515,7 @@ function bindCmRows(box, kind, afterSave) {
   $qa('[data-cdel]', box).forEach(function (b) {
     b.onclick = function () {
       var k = b.getAttribute('data-ck');
-      var list2 = JSON.parse(JSON.stringify(k === 'dl' ? FIX.lyDeadlines : DDAY_FIX));
+      var list2 = JSON.parse(JSON.stringify(k === 'dl' ? getDl(ACCT) : getDd(ACCT)));
       list2.splice(+b.getAttribute('data-cdel'), 1);
       if (k === 'dl') saveDl(list2); else saveDd(list2);
       if (k === 'dl') renderAll(); else renderDDay();
@@ -2501,19 +2525,19 @@ function bindCmRows(box, kind, afterSave) {
 }
 function initContent() {
   if ($id('annSaveBtn')) $id('annSaveBtn').onclick = function () {
-    LS.set('announcement', ($id('annText') || {}).value || '');
+    LS.set(annKey(), ($id('annText') || {}).value || '');
     renderAnnouncement(); toast('公告已儲存 ✓');
   };
   if ($id('annClearBtn')) $id('annClearBtn').onclick = function () {
-    LS.set('announcement', '');
+    LS.set(annKey(), '');
     if ($id('annText')) $id('annText').value = '';
     renderAnnouncement(); toast('公告已清除');
   };
-  if ($id('annText')) { var av = LS.get('announcement', ''); $id('annText').value = av; }
+  if ($id('annText')) { $id('annText').value = getAnn(ACCT); }
   if ($id('cmDlAddBtn')) $id('cmDlAddBtn').onclick = function () {
     var t = $id('cmDlTitle').value.trim(), d = $id('cmDlDate').value;
     if (!t || !d) { toast('請填寫標題和日期'); return; }
-    var list2 = JSON.parse(JSON.stringify(FIX.lyDeadlines));
+    var list2 = JSON.parse(JSON.stringify(getDl(ACCT)));
     list2.push({ t: t, d: d });
     saveDl(list2);
     $id('cmDlTitle').value = ''; $id('cmDlDate').value = '';
@@ -2522,21 +2546,24 @@ function initContent() {
   if ($id('cmDdAddBtn')) $id('cmDdAddBtn').onclick = function () {
     var ic = ($id('cmDdIcon').value.trim() || '🎯'), t = $id('cmDdTitle').value.trim(), d = $id('cmDdDate').value;
     if (!t || !d) { toast('請填寫標題和日期'); return; }
-    var list2 = JSON.parse(JSON.stringify(DDAY_FIX));
+    var list2 = JSON.parse(JSON.stringify(getDd(ACCT)));
     list2.push({ icon: ic, t: t, d: d });
     saveDd(list2);
     $id('cmDdIcon').value = ''; $id('cmDdTitle').value = ''; $id('cmDdDate').value = '';
     renderDDay(); renderCmDd(); toast('已新增 D-Day 節點 ✓');
   };
   if ($id('cmResetFixBtn')) $id('cmResetFixBtn').onclick = function () {
-    showConfirm('確定還原「出廠日程 + D-Day 節點」嗎？\n（你的其他資料：待辦、履歷、科目等全部保留）').then(function (ok) {
+    showConfirm('確定還原「' + (ACCT === 'bf' ? 'Austin' : 'Lok Yi') + '」的出廠日程 + D-Day 節點嗎？\n（你的其他資料：待辦、履歷、科目等全部保留）').then(function (ok) {
       if (!ok) return;
-      LS.del('fix_dl'); LS.del('fix_dday');
-      FIX.lyDeadlines = JSON.parse(JSON.stringify(FIX_DL_ORIG));
-      DDAY_FIX = JSON.parse(JSON.stringify(DDAY_FIX_ORIG));
-      renderAll(); renderCmDl(); renderCmDd(); toast('已還原預設內容 ✓');
+      LS.del(dlKey()); LS.del(ddKey());
+      renderAll(); renderCmDl(); renderCmDd(); renderDDay(); toast('已還原預設內容 ✓');
     });
   };
+}
+/* 🆕 v2.3.6：切賬號時重填內容管理編輯器（防止顯示舊賬號數據） */
+function syncContentAdmin() {
+  var el = $id('annText'); if (el) el.value = getAnn(ACCT);
+  renderCmDl(); renderCmDd();
 }
 
 /* ---- ☁️ GitHub Gist 跨裝置雲同步 ---- */
@@ -3421,9 +3448,6 @@ function renderAll() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  /* 🆕 v2.2：先套用內容管理覆蓋（在所有 render 之前） */
-  loadFixOverrides();
-
   /* 側欄遮罩（手機） */
   var mask = document.createElement('div');
   mask.id = 'sidebarMask'; mask.className = 'sidebar-mask';
