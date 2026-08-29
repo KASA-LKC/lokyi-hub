@@ -139,6 +139,31 @@ function downloadText(name, content, mime) {
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 600);
 }
 
+/* Blob 轉 File，供系統分享使用 */
+function blobToFile(blob, name) {
+  return new File([blob], name, { type: blob.type || 'application/octet-stream' });
+}
+
+/* 瀏覽器是否支援分享檔案（Web Share API Level 2） */
+function canShareFiles(blob, name) {
+  if (typeof navigator.canShare !== 'function') return false;
+  try { return navigator.canShare({ files: [blobToFile(blob, name)] }); }
+  catch (e) { return false; }
+}
+
+/* 呼叫系統分享表（AirDrop / WhatsApp / WeChat / Mail / Messages） */
+function shareBlob(blob, name) {
+  return new Promise(function (resolve) {
+    if (!canShareFiles(blob, name)) { resolve(false); return; }
+    navigator.share({ files: [blobToFile(blob, name)], title: name })
+      .then(function () { resolve(true); })
+      .catch(function (e) {
+        if (e && e.name !== 'AbortError') console.warn('shareBlob error', e);
+        resolve(false);
+      });
+  });
+}
+
 /* 使用 File System Access API 讓使用者選擇存檔位置（Chrome/Edge 支援） */
 function saveBlobAs(blob, name) {
   return new Promise(function (resolve) {
@@ -176,44 +201,39 @@ function saveBlobAs(blob, name) {
   });
 }
 
-/* 下載 Blob：先嘗試讓使用者選位置，不支援則用瀏覽器預設下載 */
+/* 下載 Blob：
+   1. Chrome/Edge 優先彈出存檔位置選擇器
+   2. Safari / PWA 則用新分頁開啟，讓 Safari 原生下載 / 分享 UI 接管
+   3. 其他瀏覽器走傳統 <a download> */
 function downloadBlob(blob, name) {
   name = name || 'download';
-  if (typeof toast === 'function') toast('已開始下載：' + name + '…');
+  if (typeof toast === 'function') toast('正在處理：' + name + '…');
   if (window.showSaveFilePicker) {
     saveBlobAs(blob, name).then(function (saved) {
       if (saved) { toast('已儲存到指定位置 ✓'); return; }
-      // 取消或瀏覽器不支援 -> 走傳統下載
-      _legacyDownloadBlob(blob, name);
-    }).catch(function () { _legacyDownloadBlob(blob, name); });
+      _fallbackDownload(blob, name);
+    }).catch(function () { _fallbackDownload(blob, name); });
     return;
   }
-  _legacyDownloadBlob(blob, name);
+  _fallbackDownload(blob, name);
 }
 
-function _legacyDownloadBlob(blob, name) {
-  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent || '');
-  /* Safari 對 blob: URL 常忽略 download 檔名（存成 Unknown.pdf），改用 data:URL */
-  if (isSafari && window.FileReader) {
-    var fr = new FileReader();
-    fr.onload = function () {
-      var a = document.createElement('a');
-      a.href = fr.result;
-      a.download = name;
-      a.style.position = 'fixed'; a.style.left = '-9999px'; a.style.opacity = '0';
-      document.body.appendChild(a);
-      try { a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); }
-      catch (e) { a.click(); }
-      setTimeout(function () { if (a.parentNode) document.body.removeChild(a); }, 1000);
-    };
-    fr.onerror = function () { _downloadViaBlobUrl(blob, name); };
-    fr.readAsDataURL(blob);
+function _fallbackDownload(blob, name) {
+  var ua = navigator.userAgent || '';
+  var isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  var isWebApp = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  /* Safari / Safari Web App：新分頁開啟 blob URL，由 Safari 原生處理下載與分享 */
+  if (isSafari || isWebApp) {
+    if (typeof toast === 'function') toast('已在 Safari 新分頁開啟，請用工具列的分享 / 下載按鈕轉發或儲存');
+    var url = URL.createObjectURL(blob);
+    var w = window.open(url, '_blank');
+    if (!w) toast('新分頁被阻擋，請允許彈出視窗');
     return;
   }
-  _downloadViaBlobUrl(blob, name);
+  _anchorDownload(blob, name);
 }
 
-function _downloadViaBlobUrl(blob, name) {
+function _anchorDownload(blob, name) {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
@@ -1999,6 +2019,7 @@ function openMatPreview(m) {
   var title = $id('matPreviewTitle');
   var dl = $id('matPreviewDownload');
   var open = $id('matPreviewOpen');
+  var sh = $id('matPreviewShare');
   var close = $id('matPreviewClose');
   if (!modal || !body || !title) return;
   if (_matPreviewUrl) { URL.revokeObjectURL(_matPreviewUrl); _matPreviewUrl = null; }
@@ -2014,9 +2035,15 @@ function openMatPreview(m) {
   } else if (isImg) {
     body.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(m.name) + '" />';
   } else {
-    body.innerHTML = '<div class="preview-fallback">此檔案類型（' + esc(ext || '未知') + '）不支援在 dashboard 內預覽，請按「下載到電腦」或「新分頁開啟」。</div>';
+    body.innerHTML = '<div class="preview-fallback">此檔案類型（' + esc(ext || '未知') + '）不支援在 dashboard 內預覽，請按「下載」、「分享」或「新分頁開啟」。</div>';
   }
   if (dl) dl.onclick = function () { downloadBlob(m.blob, m.name); };
+  if (sh) sh.onclick = function () {
+    shareBlob(m.blob, m.name).then(function (ok) {
+      if (ok) toast('已開啟系統分享表 ✓');
+      else toast('此裝置不支援檔案分享，已改為下載');
+    });
+  };
   if (open) open.onclick = function () { window.open(url, '_blank'); };
   if (close) close.onclick = function () { modal.hidden = true; if (_matPreviewUrl) { URL.revokeObjectURL(_matPreviewUrl); _matPreviewUrl = null; } };
   modal.onclick = function (e) {
@@ -2057,10 +2084,17 @@ function renderMaterials() {
       }
       var pv = document.createElement('button'); pv.className = 'ghost'; pv.textContent = '👁 預覽'; pv.style.padding = '4px 10px';
       pv.onclick = function () { openMatPreview(m); };
+      var sh = document.createElement('button'); sh.className = 'ghost'; sh.textContent = '📤 分享'; sh.style.padding = '4px 10px';
+      sh.onclick = function () {
+        shareBlob(m.blob, m.name).then(function (ok) {
+          if (ok) toast('已開啟系統分享表 ✓');
+          else toast('此裝置不支援檔案分享，請改用下載或預覽');
+        });
+      };
       var dl = document.createElement('button'); dl.className = 'ghost'; dl.textContent = '⬇️ 下載'; dl.style.padding = '4px 10px';
       dl.onclick = function () { downloadBlob(m.blob, m.name); };
       var del = delBtn(function () { idbDel(m.id).then(renderMaterials); });
-      acts.appendChild(pv); acts.appendChild(dl); acts.appendChild(del);
+      acts.appendChild(pv); acts.appendChild(sh); acts.appendChild(dl); acts.appendChild(del);
     });
   }).catch(function () {
     $id('matList').innerHTML = '<div class="empty-tip">（此瀏覽器不支援 IndexedDB）</div>';

@@ -440,7 +440,7 @@ button.ghost:hover { border-color: var(--red); color: var(--red); }
 .mat-item .m-ico { font-size: 17px; }
 .mat-item .m-name { font-weight: 700; }
 .mat-item .m-sub { color: var(--mut); font-size: 11px; }
-.mat-item .m-acts { margin-left: auto; display: flex; gap: 6px; }
+.mat-item .m-acts { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .mat-item .m-name { cursor: pointer; color: var(--red); transition: color .15s; }
 .mat-item .m-name:hover { color: #b3001e; text-decoration: underline; }
 html[data-theme="dark"] .mat-item .m-name { color: #ff6b81; }

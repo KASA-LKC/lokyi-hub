@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.16', (d.getElementById('verTag') || {}).textContent === 'v2.3.16', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.17', (d.getElementById('verTag') || {}).textContent === 'v2.3.17', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -98,10 +98,10 @@ setTimeout(() => {
       chk('記事本 LY 列表渲染 1 則', d.querySelectorAll('#notesListLy .notes-item').length === 1, String(d.querySelectorAll('#notesListLy .notes-item').length));
   // 🆕 v2.3.13 材料預覽 Modal 斷言
   chk('材料預覽 Modal 存在', !!d.getElementById('matPreviewModal'));
-  chk('材料預覽下載/開啟按鈕存在', !!(d.getElementById('matPreviewDownload') && d.getElementById('matPreviewOpen')));
-  // 🆕 v2.3.14 Safari 下載檔名修正斷言（script.js 為 IIFE，函數非全域，改查原始碼）
-  chk('downloadBlob 含 Safari data:URL 修正', js.includes('readAsDataURL'));
-  chk('downloadBlob 含下載開始 toast 提示', js.includes('已開始下載'));
+  chk('材料預覽下載/分享/開啟按鈕存在', !!(d.getElementById('matPreviewDownload') && d.getElementById('matPreviewShare') && d.getElementById('matPreviewOpen')));
+  // 🆕 v2.3.17 Safari PWA 下載修正 + 系統分享
+  chk('shareBlob / canShareFiles 分享輔助存在', js.includes('canShareFiles') && js.includes('shareBlob'));
+  chk('Safari 下載改為新分頁開啟', js.includes('window.open(url, \'_blank\')'));
   // 🆕 v2.3.15 科目篩選 + 存檔位置選擇斷言
   chk('材料科目下拉有「全部科目」選項', Array.from(d.getElementById('matSubject').options).some(o => o.value === '' && o.textContent.includes('全部科目')));
   chk('saveBlobAs 存檔位置選擇器存在', js.includes('showSaveFilePicker'));
