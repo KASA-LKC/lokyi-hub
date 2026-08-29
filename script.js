@@ -139,26 +139,71 @@ function downloadText(name, content, mime) {
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 600);
 }
 
-/* 下載 Blob（修正 Safari / PWA：無法下載 + 檔名變 Unknown 的問題） */
+/* 使用 File System Access API 讓使用者選擇存檔位置（Chrome/Edge 支援） */
+function saveBlobAs(blob, name) {
+  return new Promise(function (resolve) {
+    if (!window.showSaveFilePicker) { resolve(false); return; }
+    var ext = (String(name).match(/\.[^.]+$/) || [''])[0].toLowerCase();
+    var typeMap = {
+      '.pdf': { description: 'PDF 文件', accept: { 'application/pdf': ['.pdf'] } },
+      '.png': { description: 'PNG 圖片', accept: { 'image/png': ['.png'] } },
+      '.jpg': { description: 'JPEG 圖片', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } },
+      '.jpeg': { description: 'JPEG 圖片', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } },
+      '.gif': { description: 'GIF 圖片', accept: { 'image/gif': ['.gif'] } },
+      '.webp': { description: 'WebP 圖片', accept: { 'image/webp': ['.webp'] } },
+      '.svg': { description: 'SVG 圖片', accept: { 'image/svg+xml': ['.svg'] } },
+      '.ppt': { description: 'PowerPoint', accept: { 'application/vnd.ms-powerpoint': ['.ppt'] } },
+      '.pptx': { description: 'PowerPoint', accept: { 'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'] } },
+      '.doc': { description: 'Word 文件', accept: { 'application/msword': ['.doc'] } },
+      '.docx': { description: 'Word 文件', accept: { 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'] } },
+      '.xls': { description: 'Excel 試算表', accept: { 'application/vnd.ms-excel': ['.xls'] } },
+      '.xlsx': { description: 'Excel 試算表', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }
+    };
+    var types = [];
+    var t = typeMap[ext];
+    if (t) types.push(t);
+    window.showSaveFilePicker({ suggestedName: name, types: types }).then(function (handle) {
+      return handle.createWritable();
+    }).then(function (writable) {
+      return writable.write(blob).then(function () { return writable.close(); });
+    }).then(function () {
+      resolve(true);
+    }).catch(function (e) {
+      // AbortError = 使用者按取消，不算失敗
+      if (e && e.name !== 'AbortError') console.warn('showSaveFilePicker error', e);
+      resolve(false);
+    });
+  });
+}
+
+/* 下載 Blob：先嘗試讓使用者選位置，不支援則用瀏覽器預設下載 */
 function downloadBlob(blob, name) {
   name = name || 'download';
-  if (typeof toast === 'function') toast('已開始下載：' + name + '（請到「下載項目」資料夾查看）');
+  if (typeof toast === 'function') toast('已開始下載：' + name + '…');
+  if (window.showSaveFilePicker) {
+    saveBlobAs(blob, name).then(function (saved) {
+      if (saved) { toast('已儲存到指定位置 ✓'); return; }
+      // 取消或瀏覽器不支援 -> 走傳統下載
+      _legacyDownloadBlob(blob, name);
+    }).catch(function () { _legacyDownloadBlob(blob, name); });
+    return;
+  }
+  _legacyDownloadBlob(blob, name);
+}
+
+function _legacyDownloadBlob(blob, name) {
   var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent || '');
-  /* Safari 對 blob: URL 常忽略 download 檔名（存成 Unknown.pdf），
-     改用 data: URL 就能保留檔名；Chrome 走原本 blob 路徑即可。 */
+  /* Safari 對 blob: URL 常忽略 download 檔名（存成 Unknown.pdf），改用 data:URL */
   if (isSafari && window.FileReader) {
     var fr = new FileReader();
     fr.onload = function () {
       var a = document.createElement('a');
       a.href = fr.result;
       a.download = name;
-      a.style.position = 'fixed';
-      a.style.left = '-9999px';
-      a.style.opacity = '0';
+      a.style.position = 'fixed'; a.style.left = '-9999px'; a.style.opacity = '0';
       document.body.appendChild(a);
-      try {
-        a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
-      } catch (e) { a.click(); }
+      try { a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); }
+      catch (e) { a.click(); }
       setTimeout(function () { if (a.parentNode) document.body.removeChild(a); }, 1000);
     };
     fr.onerror = function () { _downloadViaBlobUrl(blob, name); };
@@ -173,20 +218,11 @@ function _downloadViaBlobUrl(blob, name) {
   var a = document.createElement('a');
   a.href = url;
   a.download = name;
-  a.style.position = 'fixed';
-  a.style.left = '-9999px';
-  a.style.opacity = '0';
+  a.style.position = 'fixed'; a.style.left = '-9999px'; a.style.opacity = '0';
   document.body.appendChild(a);
-  try {
-    var ev = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
-    a.dispatchEvent(ev);
-  } catch (e) {
-    try { a.click(); } catch (e2) {}
-  }
-  setTimeout(function () {
-    if (a.parentNode) document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 500);
+  try { a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); }
+  catch (e) { try { a.click(); } catch (e2) {} }
+  setTimeout(function () { if (a.parentNode) document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
 }
 
 /* ==================== 全域狀態 ==================== */
@@ -1813,10 +1849,21 @@ function renderStudy() {
     }).join('');
   }
   /* 下拉選單 */
-  ['spSubject', 'matSubject', 'planSubject'].forEach(function (id) {
+  ['spSubject', 'planSubject'].forEach(function (id) {
     var sel = $id(id); if (!sel) return;
     sel.innerHTML = subs.map(function (s) { return '<option value="' + esc(s.code) + '">' + esc(s.code) + ' · ' + esc(s.name) + '</option>'; }).join('');
   });
+  /* 材料科目：保留篩選值、加入「全部科目」、切換時重新渲染 */
+  (function () {
+    var sel = $id('matSubject'); if (!sel) return;
+    var old = sel.value;
+    sel.innerHTML = '<option value="">全部科目</option>' + subs.map(function (s) { return '<option value="' + esc(s.code) + '">' + esc(s.code) + ' · ' + esc(s.name) + '</option>'; }).join('');
+    sel.onchange = function () { renderMaterials(); };
+    var hasOld = false;
+    Array.from(sel.options).forEach(function (o) { if (o.value === old) hasOld = true; });
+    if (old && hasOld) sel.value = old;
+    else sel.value = '';
+  })();
 
   /* 材料 */
   renderMaterials();
@@ -1870,11 +1917,13 @@ function initStudy() {
     renderStudy(); toast('已加入學習計劃 ✓');
   };
   if ($id('addMatBtn')) $id('addMatBtn').onclick = function () {
+    var subj = ($id('matSubject') || {}).value;
+    if (!subj) { toast('請先選擇科目（不能選「全部科目」）'); return; }
     var f = ($id('matFile') || {}).files;
     if (!f || !f.length) { toast('請選擇檔案'); return; }
     var file = f[0];
     idbAdd({
-      id: uid(), subject: $id('matSubject').value, type: $id('matType').value.trim() || '其他',
+      id: uid(), subject: subj, type: $id('matType').value.trim() || '其他',
       name: file.name, size: file.size, note: $id('matNote').value.trim(), date: todayStr(), blob: file
     }).then(function () {
       $id('matFile').value = ''; $id('matType').value = ''; $id('matNote').value = '';
@@ -1945,7 +1994,12 @@ function renderMaterials() {
   if (!$id('matList')) return;
   idbAll().then(function (list) {
     list = list.filter(function (m) { return m.id && /^(tt_file|media_|diary_)/.test(m.id) === false; });
-    if (!list.length) { $id('matList').innerHTML = '<div class="empty-tip">尚未上傳材料（PPT / 練習 / 筆記）</div>'; return; }
+    var filterSubj = ($id('matSubject') || {}).value || '';
+    if (filterSubj) list = list.filter(function (m) { return m.subject === filterSubj; });
+    if (!list.length) {
+      $id('matList').innerHTML = '<div class="empty-tip">' + (filterSubj ? '此科目暫無材料，請上傳或切換「全部科目」' : '尚未上傳材料（PPT / 練習 / 筆記）') + '</div>';
+      return;
+    }
     list.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
     var icons = { ppt: '📊', pdf: '📄', doc: '📝', xls: '📈', other: '📎' };
     $id('matList').innerHTML = list.map(function (m) {
