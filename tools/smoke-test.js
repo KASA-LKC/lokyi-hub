@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.17', (d.getElementById('verTag') || {}).textContent === 'v2.3.17', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.18', (d.getElementById('verTag') || {}).textContent === 'v2.3.18', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -99,8 +99,10 @@ setTimeout(() => {
   // 🆕 v2.3.13 材料預覽 Modal 斷言
   chk('材料預覽 Modal 存在', !!d.getElementById('matPreviewModal'));
   chk('材料預覽下載/分享/開啟按鈕存在', !!(d.getElementById('matPreviewDownload') && d.getElementById('matPreviewShare') && d.getElementById('matPreviewOpen')));
-  // 🆕 v2.3.17 Safari PWA 下載修正 + 系統分享
-  chk('shareBlob / canShareFiles 分享輔助存在', js.includes('canShareFiles') && js.includes('shareBlob'));
+  // 🆕 v2.3.17/18 系統分享 + Safari Web App 分享替代方案
+  chk('shareBlob 分享輔助存在', js.includes('function shareBlob'));
+  chk('shareFallback 分享替代方案存在', js.includes('function shareFallback'));
+  chk('分享不支援時改開新分頁', js.includes('else shareFallback('));
   chk('Safari 下載改為新分頁開啟', js.includes('window.open(url, \'_blank\')'));
   // 🆕 v2.3.15 科目篩選 + 存檔位置選擇斷言
   chk('材料科目下拉有「全部科目」選項', Array.from(d.getElementById('matSubject').options).some(o => o.value === '' && o.textContent.includes('全部科目')));

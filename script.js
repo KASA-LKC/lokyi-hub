@@ -151,17 +151,43 @@ function canShareFiles(blob, name) {
   catch (e) { return false; }
 }
 
-/* 呼叫系統分享表（AirDrop / WhatsApp / WeChat / Mail / Messages） */
+/* 呼叫系統分享表（AirDrop / WhatsApp / WeChat / Mail / Messages）
+   回傳：'ok' 成功開分享表、'cancel' 使用者取消、'unsupported' 此容器不支援帶檔案分享 */
 function shareBlob(blob, name) {
   return new Promise(function (resolve) {
-    if (!canShareFiles(blob, name)) { resolve(false); return; }
-    navigator.share({ files: [blobToFile(blob, name)], title: name })
-      .then(function () { resolve(true); })
+    if (typeof navigator.share !== 'function') { resolve('unsupported'); return; }
+    var shareData = { files: [blobToFile(blob, name)], title: name };
+    if (typeof navigator.canShare === 'function') {
+      try {
+        if (!navigator.canShare(shareData)) { resolve('unsupported'); return; }
+      } catch (e) { resolve('unsupported'); return; }
+    }
+    navigator.share(shareData)
+      .then(function () { resolve('ok'); })
       .catch(function (e) {
-        if (e && e.name !== 'AbortError') console.warn('shareBlob error', e);
-        resolve(false);
+        if (e && e.name === 'AbortError') { resolve('cancel'); return; }
+        if (e && (e.name === 'NotSupportedError' || e.name === 'TypeError' || e.name === 'NotAllowedError')) {
+          console.warn('shareBlob error', e);
+          resolve('unsupported');
+          return;
+        }
+        console.warn('shareBlob error', e);
+        resolve('unsupported');
       });
   });
+}
+
+/* 分享表叫不出來時的替代方案：在新分頁打開檔案，
+   讓使用者用 Safari 工具列的分享按鈕（或 檔案 > 分享）做 AirDrop / WeChat / WhatsApp */
+function shareFallback(blob, name) {
+  var url = URL.createObjectURL(blob);
+  var w = window.open(url, '_blank');
+  if (w) {
+    toast('已在新分頁開啟檔案，請用 Safari 工具列「分享」按鈕（⬆️）傳送');
+  } else {
+    toast('已開啟檔案，請用 Safari「檔案 > 分享」選 AirDrop / WeChat / WhatsApp');
+  }
+  setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
 }
 
 /* 使用 File System Access API 讓使用者選擇存檔位置（Chrome/Edge 支援） */
@@ -2039,9 +2065,10 @@ function openMatPreview(m) {
   }
   if (dl) dl.onclick = function () { downloadBlob(m.blob, m.name); };
   if (sh) sh.onclick = function () {
-    shareBlob(m.blob, m.name).then(function (ok) {
-      if (ok) toast('已開啟系統分享表 ✓');
-      else toast('此裝置不支援檔案分享，已改為下載');
+    shareBlob(m.blob, m.name).then(function (r) {
+      if (r === 'ok') toast('已開啟系統分享表 ✓');
+      else if (r === 'cancel') toast('已取消分享');
+      else shareFallback(m.blob, m.name);
     });
   };
   if (open) open.onclick = function () { window.open(url, '_blank'); };
@@ -2086,9 +2113,10 @@ function renderMaterials() {
       pv.onclick = function () { openMatPreview(m); };
       var sh = document.createElement('button'); sh.className = 'ghost'; sh.textContent = '📤 分享'; sh.style.padding = '4px 10px';
       sh.onclick = function () {
-        shareBlob(m.blob, m.name).then(function (ok) {
-          if (ok) toast('已開啟系統分享表 ✓');
-          else toast('此裝置不支援檔案分享，請改用下載或預覽');
+        shareBlob(m.blob, m.name).then(function (r) {
+          if (r === 'ok') toast('已開啟系統分享表 ✓');
+          else if (r === 'cancel') toast('已取消分享');
+          else shareFallback(m.blob, m.name);
         });
       };
       var dl = document.createElement('button'); dl.className = 'ghost'; dl.textContent = '⬇️ 下載'; dl.style.padding = '4px 10px';
