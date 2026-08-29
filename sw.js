@@ -1,5 +1,5 @@
 /* Lok Yi Hub · Service Worker（離線快取） */
-const CACHE = 'lyhub-v36';
+const CACHE = 'lyhub-v37';
 const ASSETS = [
   './',
   './index.html',

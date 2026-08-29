@@ -139,6 +139,29 @@ function downloadText(name, content, mime) {
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 600);
 }
 
+/* 下載 Blob（修正 Safari / PWA 無法下載的問題） */
+function downloadBlob(blob, name) {
+  name = name || 'download';
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.style.position = 'fixed';
+  a.style.left = '-9999px';
+  a.style.opacity = '0';
+  document.body.appendChild(a);
+  try {
+    var ev = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+    a.dispatchEvent(ev);
+  } catch (e) {
+    try { a.click(); } catch (e2) {}
+  }
+  setTimeout(function () {
+    if (a.parentNode) document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 500);
+}
+
 /* ==================== 全域狀態 ==================== */
 var ACCT = LS.get('acct', 'ly');          // 'ly' | 'bf'
 var PAGE = 'dashboard';
@@ -1854,6 +1877,43 @@ function idbAdd(rec) { return idbTx('readwrite').then(function (st) { return new
 function idbAll() { return idbTx('readonly').then(function (st) { return new Promise(function (res, rej) { var r = st.getAll(); r.onsuccess = function () { res(r.result || []); }; r.onerror = function () { rej(r.error); }; }); }); }
 function idbDel(id) { return idbTx('readwrite').then(function (st) { st.delete(id); }); }
 
+/* 材料預覽 Modal */
+var _matPreviewUrl = null;
+function openMatPreview(m) {
+  var modal = $id('matPreviewModal');
+  var body = $id('matPreviewBody');
+  var title = $id('matPreviewTitle');
+  var dl = $id('matPreviewDownload');
+  var open = $id('matPreviewOpen');
+  var close = $id('matPreviewClose');
+  if (!modal || !body || !title) return;
+  if (_matPreviewUrl) { URL.revokeObjectURL(_matPreviewUrl); _matPreviewUrl = null; }
+  title.textContent = m.name;
+  body.innerHTML = '<div class="preview-fallback">載入中…</div>';
+  var url = URL.createObjectURL(m.blob);
+  _matPreviewUrl = url;
+  var ext = (m.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+  var isPdf = ext === '.pdf';
+  var isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(ext);
+  if (isPdf) {
+    body.innerHTML = '<embed src="' + esc(url + '#toolbar=1') + '" type="application/pdf" />';
+  } else if (isImg) {
+    body.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(m.name) + '" />';
+  } else {
+    body.innerHTML = '<div class="preview-fallback">此檔案類型（' + esc(ext || '未知') + '）不支援在 dashboard 內預覽，請按「下載到電腦」或「新分頁開啟」。</div>';
+  }
+  if (dl) dl.onclick = function () { downloadBlob(m.blob, m.name); };
+  if (open) open.onclick = function () { window.open(url, '_blank'); };
+  if (close) close.onclick = function () { modal.hidden = true; if (_matPreviewUrl) { URL.revokeObjectURL(_matPreviewUrl); _matPreviewUrl = null; } };
+  modal.onclick = function (e) {
+    if (e.target === modal) {
+      modal.hidden = true;
+      if (_matPreviewUrl) { URL.revokeObjectURL(_matPreviewUrl); _matPreviewUrl = null; }
+    }
+  };
+  modal.hidden = false;
+}
+
 function renderMaterials() {
   if (!$id('matList')) return;
   idbAll().then(function (list) {
@@ -1871,14 +1931,17 @@ function renderMaterials() {
     list.forEach(function (m) {
       var row = $q('#matList .mat-item[data-id="' + m.id + '"]'); if (!row) return;
       var acts = row.querySelector('.m-acts');
+      var nameEl = row.querySelector('.m-name');
+      if (nameEl) {
+        nameEl.title = '點擊預覽';
+        nameEl.onclick = function () { openMatPreview(m); };
+      }
+      var pv = document.createElement('button'); pv.className = 'ghost'; pv.textContent = '👁 預覽'; pv.style.padding = '4px 10px';
+      pv.onclick = function () { openMatPreview(m); };
       var dl = document.createElement('button'); dl.className = 'ghost'; dl.textContent = '⬇️ 下載'; dl.style.padding = '4px 10px';
-      dl.onclick = function () {
-        var url = URL.createObjectURL(m.blob);
-        var a = document.createElement('a'); a.href = url; a.download = m.name; a.click();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 800);
-      };
+      dl.onclick = function () { downloadBlob(m.blob, m.name); };
       var del = delBtn(function () { idbDel(m.id).then(renderMaterials); });
-      acts.appendChild(dl); acts.appendChild(del);
+      acts.appendChild(pv); acts.appendChild(dl); acts.appendChild(del);
     });
   }).catch(function () {
     $id('matList').innerHTML = '<div class="empty-tip">（此瀏覽器不支援 IndexedDB）</div>';

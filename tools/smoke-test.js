@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.12', (d.getElementById('verTag') || {}).textContent === 'v2.3.12', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.13', (d.getElementById('verTag') || {}).textContent === 'v2.3.13', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -96,6 +96,9 @@ setTimeout(() => {
       var saved = (function () { try { return JSON.parse(d.defaultView.localStorage.getItem('lyhub_notes') || '[]'); } catch (e) { return []; } })();
       chk('記事本 LY 新增後寫入 localStorage', saved.length === 1 && saved[0].title === '測試筆記', 'len=' + saved.length);
       chk('記事本 LY 列表渲染 1 則', d.querySelectorAll('#notesListLy .notes-item').length === 1, String(d.querySelectorAll('#notesListLy .notes-item').length));
+  // 🆕 v2.3.13 材料預覽 Modal 斷言
+  chk('材料預覽 Modal 存在', !!d.getElementById('matPreviewModal'));
+  chk('材料預覽下載/開啟按鈕存在', !!(d.getElementById('matPreviewDownload') && d.getElementById('matPreviewOpen')));
     }
   })();
 

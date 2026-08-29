@@ -441,6 +441,10 @@ button.ghost:hover { border-color: var(--red); color: var(--red); }
 .mat-item .m-name { font-weight: 700; }
 .mat-item .m-sub { color: var(--mut); font-size: 11px; }
 .mat-item .m-acts { margin-left: auto; display: flex; gap: 6px; }
+.mat-item .m-name { cursor: pointer; color: var(--red); transition: color .15s; }
+.mat-item .m-name:hover { color: #b3001e; text-decoration: underline; }
+html[data-theme="dark"] .mat-item .m-name { color: #ff6b81; }
+html[data-theme="dark"] .mat-item .m-name:hover { color: #ff9aa9; }
 
 /* ============== 社交 IP ============== */
 .ip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 6px; }
@@ -494,6 +498,33 @@ button.ghost:hover { border-color: var(--red); color: var(--red); }
 .modal-msg { font-size: 14px; font-weight: 600; line-height: 1.6; margin-bottom: 18px; white-space: pre-line; }
 .modal-btns { display: flex; gap: 10px; justify-content: center; }
 .modal-btns button { min-width: 110px; }
+
+/* ============== 🆕 v2.3.13：材料預覽 Modal ============== */
+.modal-box.preview-box {
+  width: min(920px, 96vw); max-height: 92vh; padding: 0; overflow: hidden;
+  display: flex; flex-direction: column; text-align: left;
+}
+.preview-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--line); flex: none;
+}
+.preview-title { font-weight: 800; font-size: 14px; color: var(--ink); word-break: break-all; padding-right: 12px; }
+.preview-body {
+  flex: 1 1 auto; min-height: 360px; max-height: 70vh; overflow: auto;
+  background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+}
+.preview-body iframe, .preview-body embed {
+  width: 100%; height: 100%; min-height: 360px; border: none; background: #fff;
+}
+.preview-body img { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.preview-fallback { color: var(--mut); font-size: 13px; padding: 40px; text-align: center; }
+.preview-foot {
+  display: flex; justify-content: center; gap: 10px; padding: 14px 20px;
+  border-top: 1px solid var(--line); flex: none; flex-wrap: wrap;
+}
+html[data-theme="dark"] .preview-body { background: #1c222e; }
+html[data-theme="dark"] .preview-body iframe,
+html[data-theme="dark"] .preview-body embed { background: #111; }
 
 /* ============== Loki AI ============== */
 .ai-launcher { position: fixed; right: 20px; bottom: 20px; z-index: 90; }
