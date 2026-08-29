@@ -139,9 +139,36 @@ function downloadText(name, content, mime) {
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 600);
 }
 
-/* 下載 Blob（修正 Safari / PWA 無法下載的問題） */
+/* 下載 Blob（修正 Safari / PWA：無法下載 + 檔名變 Unknown 的問題） */
 function downloadBlob(blob, name) {
   name = name || 'download';
+  if (typeof toast === 'function') toast('已開始下載：' + name + '（請到「下載項目」資料夾查看）');
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent || '');
+  /* Safari 對 blob: URL 常忽略 download 檔名（存成 Unknown.pdf），
+     改用 data: URL 就能保留檔名；Chrome 走原本 blob 路徑即可。 */
+  if (isSafari && window.FileReader) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var a = document.createElement('a');
+      a.href = fr.result;
+      a.download = name;
+      a.style.position = 'fixed';
+      a.style.left = '-9999px';
+      a.style.opacity = '0';
+      document.body.appendChild(a);
+      try {
+        a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      } catch (e) { a.click(); }
+      setTimeout(function () { if (a.parentNode) document.body.removeChild(a); }, 1000);
+    };
+    fr.onerror = function () { _downloadViaBlobUrl(blob, name); };
+    fr.readAsDataURL(blob);
+    return;
+  }
+  _downloadViaBlobUrl(blob, name);
+}
+
+function _downloadViaBlobUrl(blob, name) {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
