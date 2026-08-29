@@ -972,6 +972,7 @@ function initInfo() {
 var CANVAS_BASE = 'https://canvas.polyu.edu.hk/api/v1';
 var canvasCourses = [];
 var canvasAssignments = [];
+var canvasManual = [];
 
 function canvasFetch(path, token) {
   return fetch(CANVAS_BASE + path, { headers: { 'Authorization': 'Bearer ' + token } })
@@ -1080,11 +1081,28 @@ function initCanvas() {
     var st = $id('canvasStatus'); if (st) st.innerHTML = '狀態：已清除 Token。';
     renderCanvas();
   };
+  /* 手動匯入（學校禁 Token 時用） */
+  if ($id('canvasParseBtn')) $id('canvasParseBtn').onclick = parseCanvasText;
+  if ($id('canvasManualClearBtn')) $id('canvasManualClearBtn').onclick = function () {
+    if (!confirm('確定清除手動匯入嘅 Canvas 作業？')) return;
+    canvasManual = []; canvasAssignments = canvasAssignments.filter(function (a) { return a.id && a.id.indexOf('manual-') !== 0; });
+    if ($id('canvasPaste')) $id('canvasPaste').value = '';
+    if ($id('canvasManualStatus')) $id('canvasManualStatus').textContent = '已清除手動匯入。';
+    LS.set('canvasManual', canvasManual);
+    renderCanvas();
+  };
   /* 已有 token → 顯示狀態並自動同步一次 */
   if (LS.get('canvasToken', '')) {
     var st = $id('canvasStatus');
     if (st) st.innerHTML = '狀態：已儲存 Token。按「🔄 立即同步」更新課程與作業。';
     setTimeout(function () { syncCanvas(false); }, 1500);
+  }
+  /* 載入手動匯入資料 */
+  canvasManual = LS.get('canvasManual', []);
+  if (canvasManual.length) {
+    var auto = canvasAssignments.filter(function (a) { return a.id && a.id.indexOf('manual-') !== 0; });
+    canvasAssignments = auto.concat(canvasManual).sort(function (a, b) { return (a.due || '').localeCompare(b.due || ''); });
+    renderCanvas();
   }
 }
 
@@ -1213,6 +1231,94 @@ function extractDate(text) {
     if (mm > 12 && dd <= 12) { var t = mm; mm = dd; dd = t; }
     return y + '-' + ('0' + mm).slice(-2) + '-' + ('0' + dd).slice(-2);
   } catch (e) { return ''; }
+}
+function extractCanvasDate(text) {
+  if (!text) return '';
+  var MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  /* 1) ISO yyyy-mm-dd / yyyy/mm/dd */
+  var m = text.match(/(20\d{2})[\-/.](\d{1,2})[\-/.](\d{1,2})/);
+  if (m) return m[1] + '-' + pad2(+m[2]) + '-' + pad2(+m[3]);
+  /* 2) numeric d/m/y or m/d/y */
+  var n = text.match(/\b(\d{1,2})[\-/.](\d{1,2})[\-/.](\d{2,4})\b/);
+  if (n) {
+    var p1 = +n[1], p2 = +n[2], y = n[3].length === 2 ? 2000 + (+n[3]) : +n[3];
+    var mm = (p2 > 12 && p1 <= 12) ? p1 : p2, dd = (p2 > 12 && p1 <= 12) ? p2 : p1;
+    return y + '-' + pad2(mm) + '-' + pad2(dd);
+  }
+  /* 3) month name + day (Canvas 常見): "Sep 10", "Sept 10", "Sep 10, 2026", "Sep 10 at 11:59pm", "10 Sep" */
+  var reM = /(jan|feb|mar|apr|may|jun|jul|aug|sep(?:t)?|oct|nov|dec)\w*\.?\s+(\d{1,2})(?:,?\s*(20\d{2}))?/i;
+  var reD = /(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep(?:t)?|oct|nov|dec)\w*\.?/i;
+  var mk = null, dd = 0, yr = 0;
+  var a = text.match(reM);
+  if (a) { mk = a[1].toLowerCase().replace('sept', 'sep'); dd = +a[2]; yr = a[3] ? +a[3] : new Date().getFullYear(); }
+  else {
+    var b = text.match(reD);
+    if (!b) return '';
+    mk = b[2].toLowerCase().replace('sept', 'sep'); dd = +b[1]; yr = new Date().getFullYear();
+  }
+  if (MON[mk] === undefined) return '';
+  var dt = new Date(yr, MON[mk], dd);
+  if (dt < new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) dt = new Date(yr + 1, MON[mk], dd);
+  return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+}
+function canvasSplitEntries(text) {
+  text = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  var blocks = text.split(/\n{2,}/).map(function (x) { return x.trim(); }).filter(Boolean);
+  if (blocks.length > 1) return blocks;
+  /* 無空行分隔：逐行，遇到含 course code 或 assignment 關鍵字作新 entry 起點 */
+  var lines = text.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+  var out = [], cur = null;
+  var reStart = /([A-Z]{2,4}\s?\d{3,5}[A-Z]?)|assignment|quiz|project|essay|lab|exam|test|homework|report|proposal|exercise|midterm|final|reading|due/i;
+  lines.forEach(function (ln) {
+    if (!cur || reStart.test(ln)) { if (cur) out.push(cur.trim()); cur = ln; }
+    else cur += '\n' + ln;
+  });
+  if (cur) out.push(cur.trim());
+  return out.filter(Boolean);
+}
+function parseCanvasText() {
+  var ta = $id('canvasPaste');
+  if (!ta || !ta.value.trim()) { if ($id('canvasManualStatus')) $id('canvasManualStatus').textContent = '⚠️ 先貼啲 Canvas 作業內容。'; return; }
+  if ($id('canvasManualStatus')) $id('canvasManualStatus').textContent = '⏳ 解析中…';
+  try {
+    var courseRe = /([A-Z]{2,4}\s?(?:\d{3,5}[A-Z]?|\d[A-Z]\d{1,2}))/;
+    var kw = /assignment|quiz|project|essay|lab|exam|test|homework|report|proposal|exercise|midterm|final|reading|submission|coursework/i;
+    var entries = canvasSplitEntries(ta.value);
+    var parsed = [], skipped = 0;
+    entries.forEach(function (e) {
+      var due = extractCanvasDate(e);
+      var cm = e.match(courseRe);
+      var course = cm ? cm[1].replace(/\s+/g, ' ').trim() : '';
+      var lines = e.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+      var titleLine = lines.filter(function (l) { return kw.test(l); })[0]
+        || lines.filter(function (l) { return l && (!course || l.indexOf(course) < 0); })[0]
+        || lines[0] || e;
+      var title = titleLine.replace(courseRe, '').replace(/due.*/i, '').replace(/\s+/g, ' ').trim().slice(0, 90);
+      if (!title) title = (e.split('\n')[0] || e).slice(0, 90);
+      if (!due) { skipped++; return; } /* 無截止日期慨唔入 DDL */
+      parsed.push({ name: title, course: course, due: due, id: 'manual-' + course + '-' + title + '-' + due });
+    });
+    /* 去重 + 合併入 canvasAssignments */
+    var merged = canvasManual.concat(parsed);
+    var seen = {}; var uniq = [];
+    merged.forEach(function (x) { var k = x.id; if (!seen[k]) { seen[k] = 1; uniq.push(x); } });
+    canvasManual = parsed;
+    canvasAssignments = uniq.sort(function (a, b) { return (a.due || '').localeCompare(b.due || ''); });
+    var autoTodo = !$id('canvasManualTodo') || $id('canvasManualTodo').checked !== false;
+    var added = 0;
+    if (autoTodo) {
+      var todos = LS.get('todos', []), ex = {}; todos.forEach(function (t) { ex[t.t + '|' + t.due] = 1; });
+      canvasAssignments.forEach(function (a) {
+        var title = '📝 ' + (a.course ? a.course + ' · ' : '') + a.name;
+        if (!ex[title + '|' + a.due]) { todos.push({ t: title, cat: 'Canvas', due: a.due, done: false }); ex[title + '|' + a.due] = 1; added++; }
+      });
+      if (added) { LS.set('todos', todos); renderTodos(); renderDashboard(); renderNotifs(); }
+    }
+    LS.set('canvasManual', canvasManual);
+    LS.set('canvasAssignments', canvasAssignments);
+    if ($id('canvasManualStatus')) $id('canvasManualStatus').textContent = '✅ 解析到 ' + parsed.length + ' 項作業（已匯入 ' + canvasAssignments.length + ' 項）' + (skipped ? '；跳過 ' + skipped + ' 項無日期。' : '') + (autoTodo ? ' 已加入 ' + added + ' 項待辦。' : '');
+    renderCanvas();
+  } catch (e) { if ($id('canvasManualStatus')) $id('canvasManualStatus').textContent = '❌ 解析失敗 — ' + esc((e && e.message) || e); }
 }
 function outlookSyncCalendar() {
   outlookStatus('⏳ 同步行事曆中…');

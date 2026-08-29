@@ -86,7 +86,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.10</div>
+    <div class="ver-tag" id="verTag">v2.3.11</div>
   </div>
 </aside>
 
@@ -1337,6 +1337,22 @@
         <div class="card-title">⏰ 即將到期作業 / 考試</div>
         <div id="canvasAssignments" class="plan-list"><div class="alert-item" style="border-left-color:#9ca3af"><span>同步後會顯示最近 30 日到期嘅作業。</span></div></div>
       </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">📥 手動匯入（學校禁 Token 時用）</div>
+      <p style="font-size:13px;color:#4b5563;margin-top:-6px">
+        唔使經 PolyU admin。喺 Canvas 嘅 <b>Assignments</b> 或 <b>To Do</b> 頁複製作業名同截止日期，貼落下面，Dashboard 會自動解析並加入「即將到期作業」同「待辦 / DDL」。
+      </p>
+      <div class="form-row" style="margin-top:6px">
+        <textarea id="canvasPaste" placeholder="將 Canvas 作業內容貼埋呢度。例如：&#10;HTM 3025 Analysing and Interpreting Research&#10;Assignment 1: Research Proposal&#10;Due Sep 10 at 11:59pm&#10;&#10;（可一次過貼幾個作業，用空白行分隔）" style="flex:1;min-width:240px;height:110px;resize:vertical"></textarea>
+      </div>
+      <div class="form-row" style="margin-top:6px">
+        <button class="primary" id="canvasParseBtn">🔍 解析 Canvas 內容</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="canvasManualTodo" checked /> 自動加入待辦 / DDL</label>
+        <button class="ghost" id="canvasManualClearBtn">🗑 清除手動匯入</button>
+      </div>
+      <div id="canvasManualStatus" class="src" style="margin-top:6px">尚未匯入。從 Canvas 複製作業文字後撳上面掣。</div>
     </div>
   </section>
 

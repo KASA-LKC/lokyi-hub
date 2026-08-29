@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.10', (d.getElementById('verTag') || {}).textContent === 'v2.3.10', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.11', (d.getElementById('verTag') || {}).textContent === 'v2.3.11', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -59,6 +59,9 @@ setTimeout(() => {
   chk('saveCanvasBtn 已綁定 onclick', !!(d.getElementById('saveCanvasBtn') || {}).onclick);
   chk('syncCanvasBtn 已綁定 onclick', !!(d.getElementById('syncCanvasBtn') || {}).onclick);
   chk('clearCanvasBtn 已綁定 onclick', !!(d.getElementById('clearCanvasBtn') || {}).onclick);
+  chk('canvasPaste textarea 存在', !!d.getElementById('canvasPaste'));
+  chk('canvasParseBtn 已綁定 onclick', !!(d.getElementById('canvasParseBtn') || {}).onclick);
+  chk('canvasManualClearBtn 已綁定 onclick', !!(d.getElementById('canvasManualClearBtn') || {}).onclick);
   chk('saveAdvisorBtn 已綁定 onclick', !!(d.getElementById('saveAdvisorBtn') || {}).onclick);
   chk('lgSave 已綁定 onclick', !!(d.getElementById('lgSave') || {}).onclick);
   chk('lgTogglePwd 已綁定 onclick', !!(d.getElementById('lgTogglePwd') || {}).onclick);
