@@ -1916,12 +1916,50 @@ function initStudy() {
     $id('planTitle').value = ''; $id('planDate').value = ''; $id('planDuration').value = '';
     renderStudy(); toast('已加入學習計劃 ✓');
   };
+  /* 從檔名自動偵測科目（未選科目時的容錯） */
+  function _editDist1(a, b) {
+    if (Math.abs(a.length - b.length) > 1) return false;
+    var i = 0, j = 0, diff = 0;
+    while (i < a.length && j < b.length) {
+      if (a[i] === b[j]) { i++; j++; continue; }
+      if (++diff > 1) return false;
+      if (a.length === b.length) { i++; j++; }
+      else if (a.length > b.length) i++;
+      else j++;
+    }
+    return true;
+  }
+  function guessSubjectFromName(name) {
+    var subs = studySubjects();
+    var fn = String(name || '').toUpperCase().replace(/[\s_\-\.]/g, '');
+    if (!fn) return '';
+    var i;
+    for (i = 0; i < subs.length; i++) {
+      var code = String(subs[i].code || '').toUpperCase().replace(/[\s_\-\.]/g, '');
+      if (code && fn.indexOf(code) !== -1) return subs[i].code;
+    }
+    /* 寬鬆比對：檔名裡的代碼和科目代碼只差一個字也算命中（如 ENG1A28 vs ENGL1A28） */
+    var tokens = fn.match(/[A-Z]{2,5}\d[A-Z0-9]{2,5}/g) || [];
+    for (i = 0; i < subs.length; i++) {
+      var c = String(subs[i].code || '').toUpperCase().replace(/[\s_\-\.]/g, '');
+      if (!c) continue;
+      for (var k = 0; k < tokens.length; k++) {
+        if (_editDist1(tokens[k], c)) return subs[i].code;
+      }
+    }
+    return '';
+  }
   if ($id('addMatBtn')) $id('addMatBtn').onclick = function () {
     var subj = ($id('matSubject') || {}).value;
-    if (!subj) { toast('請先選擇科目（不能選「全部科目」）'); return; }
     var f = ($id('matFile') || {}).files;
     if (!f || !f.length) { toast('請選擇檔案'); return; }
     var file = f[0];
+    if (!subj) {
+      /* 選了「全部科目」：先嘗試從檔名偵測科目代碼，偵測不到才擋下 */
+      subj = guessSubjectFromName(file.name);
+      if (subj) { toast('未選科目，已依檔名自動歸類到 ' + subj + ' ✓'); }
+      else { toast('請先選擇科目（不能選「全部科目」），或把科目代碼寫進檔名'); return; }
+    }
     idbAdd({
       id: uid(), subject: subj, type: $id('matType').value.trim() || '其他',
       name: file.name, size: file.size, note: $id('matNote').value.trim(), date: todayStr(), blob: file

@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.15', (d.getElementById('verTag') || {}).textContent === 'v2.3.15', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.16', (d.getElementById('verTag') || {}).textContent === 'v2.3.16', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -105,6 +105,9 @@ setTimeout(() => {
   // 🆕 v2.3.15 科目篩選 + 存檔位置選擇斷言
   chk('材料科目下拉有「全部科目」選項', Array.from(d.getElementById('matSubject').options).some(o => o.value === '' && o.textContent.includes('全部科目')));
   chk('saveBlobAs 存檔位置選擇器存在', js.includes('showSaveFilePicker'));
+  // 🆕 v2.3.16 未選科目時從檔名自動偵測科目
+  chk('guessSubjectFromName 檔名偵測科目存在', js.includes('guessSubjectFromName'));
+  chk('檔名寬鬆比對（差一字元）存在', js.includes('_editDist1'));
     }
   })();
 
