@@ -88,7 +88,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.18</div>
+    <div class="ver-tag" id="verTag">v2.3.19</div>
   </div>
 </aside>
 
@@ -960,6 +960,7 @@
       <p style="font-size:12px;color:#6b7280;margin-top:-8px;margin-bottom:12px">上傳後會儲存在本機 IndexedDB，可在同一瀏覽器內隨時下載。</p>
       <div class="form-row">
         <select id="matSubject"></select>
+        <button class="ghost" id="matShowAll" style="white-space:nowrap;min-width:auto">🔍 顯示全部</button>
         <input id="matType" placeholder="類型（PPT / 練習 / 筆記 / 其他）" />
         <input id="matFile" type="file" />
         <input id="matNote" placeholder="備註（例：Week 1 Lecture）" />

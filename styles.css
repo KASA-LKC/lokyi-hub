@@ -445,6 +445,15 @@ button.ghost:hover { border-color: var(--red); color: var(--red); }
 .mat-item .m-name:hover { color: #b3001e; text-decoration: underline; }
 html[data-theme="dark"] .mat-item .m-name { color: #ff6b81; }
 html[data-theme="dark"] .mat-item .m-name:hover { color: #ff9aa9; }
+.show-all-link, .show-subj-link {
+  color: var(--red); text-decoration: underline; cursor: pointer; font-weight: 700;
+}
+.show-subj-link { margin: 0 3px; }
+.show-all-link:hover, .show-subj-link:hover { color: #b3001e; }
+html[data-theme="dark"] .show-all-link,
+html[data-theme="dark"] .show-subj-link { color: #ff6b81; }
+html[data-theme="dark"] .show-all-link:hover,
+html[data-theme="dark"] .show-subj-link:hover { color: #ff9aa9; }
 
 /* ============== 社交 IP ============== */
 .ip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 6px; }

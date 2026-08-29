@@ -1962,7 +1962,11 @@ function initStudy() {
     $id('planTitle').value = ''; $id('planDate').value = ''; $id('planDuration').value = '';
     renderStudy(); toast('已加入學習計劃 ✓');
   };
-  /* 從檔名自動偵測科目（未選科目時的容錯） */
+  /* 材料：顯示全部按鈕 */
+  if ($id('matShowAll')) $id('matShowAll').onclick = function () {
+    var sel = $id('matSubject'); if (!sel) return;
+    sel.value = ''; renderMaterials();
+  };
   function _editDist1(a, b) {
     if (Math.abs(a.length - b.length) > 1) return false;
     var i = 0, j = 0, diff = 0;
@@ -2087,21 +2091,43 @@ function renderMaterials() {
   idbAll().then(function (list) {
     list = list.filter(function (m) { return m.id && /^(tt_file|media_|diary_)/.test(m.id) === false; });
     var filterSubj = ($id('matSubject') || {}).value || '';
-    if (filterSubj) list = list.filter(function (m) { return m.subject === filterSubj; });
-    if (!list.length) {
-      $id('matList').innerHTML = '<div class="empty-tip">' + (filterSubj ? '此科目暫無材料，請上傳或切換「全部科目」' : '尚未上傳材料（PPT / 練習 / 筆記）') + '</div>';
+    var counts = {};
+    list.forEach(function (m) { var c = m.subject || '(未分類)'; counts[c] = (counts[c] || 0) + 1; });
+    var visible = filterSubj ? list.filter(function (m) { return m.subject === filterSubj; }) : list;
+    if (!visible.length) {
+      var msg = filterSubj ? '此科目暫無材料，請上傳或' : '尚未上傳材料（PPT / 練習 / 筆記）。';
+      var links = '';
+      if (filterSubj) {
+        var others = Object.keys(counts).filter(function (c) { return c !== filterSubj; });
+        if (others.length) {
+          links += '<div style="margin-top:8px;font-size:12px">以下科目已有檔案：' +
+            others.map(function (c) { return '<span class="show-subj-link" data-subj="' + esc(c) + '">' + esc(c) + '（' + counts[c] + '）</span>'; }).join('、') +
+            '</div>';
+        }
+      }
+      $id('matList').innerHTML = '<div class="empty-tip">' + msg + '<span class="show-all-link">切換「全部科目」</span>' + links + '</div>';
+      var lnk = $id('matList').querySelector('.show-all-link');
+      if (lnk) lnk.onclick = function () { var sel = $id('matSubject'); if (sel) sel.value = ''; renderMaterials(); };
+      $qa('#matList .show-subj-link').forEach(function (el) {
+        el.onclick = function () {
+          var code = el.getAttribute('data-subj');
+          var sel = $id('matSubject');
+          if (sel) sel.value = code;
+          renderMaterials();
+        };
+      });
       return;
     }
-    list.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+    visible.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
     var icons = { ppt: '📊', pdf: '📄', doc: '📝', xls: '📈', other: '📎' };
-    $id('matList').innerHTML = list.map(function (m) {
+    $id('matList').innerHTML = visible.map(function (m) {
       var ic = m.name.match(/\.pptx?$/i) ? icons.ppt : m.name.match(/\.pdf$/i) ? icons.pdf : m.name.match(/\.(docx?|txt|md)$/i) ? icons.doc : m.name.match(/\.xlsx?$/i) ? icons.xls : icons.other;
       var sz = m.size > 1048576 ? (m.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(m.size / 1024)) + ' KB';
       return '<div class="mat-item" data-id="' + esc(m.id) + '"><span class="m-ico">' + ic + '</span>' +
         '<div><div class="m-name">' + esc(m.name) + '</div><div class="m-sub">' + esc(m.subject || '') + ' · ' + esc(m.type) + ' · ' + sz + (m.note ? ' · ' + esc(m.note) : '') + '</div></div>' +
         '<div class="m-acts"></div></div>';
     }).join('');
-    list.forEach(function (m) {
+    visible.forEach(function (m) {
       var row = $q('#matList .mat-item[data-id="' + m.id + '"]'); if (!row) return;
       var acts = row.querySelector('.m-acts');
       var nameEl = row.querySelector('.m-name');
