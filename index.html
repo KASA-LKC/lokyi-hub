@@ -58,6 +58,7 @@
     <a href="#" class="nav-item" data-target="todos" data-account="ly"><span class="ico">✅</span><span>待辦 & 提醒</span></a>
     <a href="#" class="nav-item" data-target="info" data-account="ly"><span class="ico">🏫</span><span>校園資訊 & 聯繫人</span></a>
     <a href="#" class="nav-item" data-target="canvas" data-account="ly"><span class="ico">🎨</span><span>Canvas 同步提醒</span></a>
+    <a href="#" class="nav-item" data-target="outlook" data-account="ly"><span class="ico">📧</span><span>Outlook 連接</span></a>
     <a href="#" class="nav-item" data-target="library" data-account="ly"><span class="ico">📎</span><span>資源筆記庫</span></a>
     <a href="#" class="nav-item" data-target="ip" data-account="ly"><span class="ico">🎥</span><span>我的社交IP</span></a>
     <a href="#" class="nav-item" data-target="media" data-account="ly"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書+抖音</span></a>
@@ -85,7 +86,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.8</div>
+    <div class="ver-tag" id="verTag">v2.3.9</div>
   </div>
 </aside>
 
@@ -1339,6 +1340,41 @@
     </div>
   </section>
 
+  <!-- ===== LY：Outlook 連接與同步 ===== -->
+  <section class="page" data-account="ly" id="page-outlook">
+    <div class="card">
+      <div class="card-title">📧 Outlook 連接 & 自動同步</div>
+      <p style="font-size:13px;color:#4b5563;margin-top:-6px">
+        連接你嘅 PolyU 學校 Outlook（<b>connect.polyu.hk</b>），Dashboard 會自動讀取<b>行事曆</b>（改堂 / 考試 / 活動）同<b>郵件</b>中嘅重要資訊
+        （assignment / test / exam / exchange / club / lecture notes / exercise / 改堂 / 課室更改），幫你更新行程表與 DDL 清單，並進入現有提醒系統。
+      </p>
+      <div class="form-row">
+        <input id="outlookClientId" placeholder="Entra ID 應用程式 (client) ID" style="flex:2;min-width:240px" />
+        <input id="outlookTenant" placeholder="Tenant ID（留空用 common）" style="flex:1;min-width:160px" />
+        <button class="primary" id="outlookConnectBtn">🔗 連接 Outlook</button>
+        <button class="ghost" id="outlookDisconnectBtn">🚪 斷開</button>
+      </div>
+      <div id="outlookStatus" class="src" style="margin-top:8px">狀態：未連接。需要在 PolyU Entra ID 註冊一個 App（取得 client ID），並開啟 <b>Calendars.Read</b> + <b>Mail.Read</b> 權限。Token 由 MSAL 存本機瀏覽器（localStorage），唔會上傳。</div>
+      <div class="form-row" style="margin-top:8px">
+        <button class="ghost" id="outlookSyncCalBtn">📅 同步行事曆</button>
+        <button class="ghost" id="outlookSyncMailBtn">✉️ 同步郵件資訊</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="outlookAutoTodo" checked /> 自動加入待辦 / DDL</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="outlookAutoRemind" checked /> 到期前通知</label>
+      </div>
+      <div class="src" style="margin-top:6px">⚠️ 若連接時彈「需要管理員批准」，代表 PolyU 禁止學生 App 讀取郵件／行事曆，請向 ITS 申請 admin consent，或改用只開 <b>Calendars.Read</b>（通常較易批）。首次連接會彈出 Microsoft 登入視窗，請用學校帳號登入。</div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📅 來自行事曆嘅事項（未來 4 個月）</div>
+        <div id="outlookCalList" class="plan-list"><div class="alert-item" style="border-left-color:#9ca3af"><span>尚未同步 — 按「📅 同步行事曆」。</span></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">✉️ 郵件中的重要資訊（最近 80 封）</div>
+        <div id="outlookMailList" class="plan-list"><div class="alert-item" style="border-left-color:#9ca3af"><span>尚未同步 — 按「✉️ 同步郵件資訊」。</span></div></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== BF 0.5：HKCC 資訊 & 聯繫人 ===== -->
   <section class="page" data-account="bf" id="page-bf_info">
     <div class="card">
@@ -1825,6 +1861,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/dist/msal-browser.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

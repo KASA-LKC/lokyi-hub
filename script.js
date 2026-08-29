@@ -1089,6 +1089,236 @@ function initCanvas() {
 }
 
 /* ============================================================
+   模塊 9.7：Outlook 連接與同步（LY：outlook）
+   經 Microsoft Graph API + MSAL.js（瀏覽器 OAuth，popup 流程）。
+   - 行事曆 Calendars.Read → 改堂/考試/活動 入行程表 + DDL
+   - 郵件   Mail.Read → 關鍵字解析 assignment/test/exam/exchange/club/notes 入待辦
+   Token 由 MSAL 存本機（cacheLocation: localStorage），唔會上傳。
+   若 PolyU 禁止學生 App 讀取，會彈「需要管理員批准」（admin consent）。
+   ============================================================ */
+var GRAPH = 'https://graph.microsoft.com/v1.0';
+var outlookCal = [];
+var outlookMail = [];
+var _msalApp = null;
+
+/* 郵件關鍵字分類（EN + TC） */
+var OUTLOOK_RULES = [
+  { cat: '功課/Assignment', emo: '📝', re: /assignment|homework|coursework|功課|作業|submission|due|截止/i },
+  { cat: '測驗/Test', emo: '📝', re: /test|quiz|測驗|小測/i },
+  { cat: '考試/Exam', emo: '📕', re: /exam|final|考試|期末/i },
+  { cat: '改堂/Reschedule', emo: '🔄', re: /reschedule|改堂|調堂|class change|timetable change|時間表更改|課堂調動/i },
+  { cat: '課室更改/Room', emo: '📍', re: /room change|課室更改|換課室|venue change|課室調動/i },
+  { cat: '交換/Exchange', emo: '✈️', re: /exchange|交換/i },
+  { cat: '學會/Club', emo: '🎗️', re: /club|society|學會|社團|活動/i },
+  { cat: '講義/Notes', emo: '📄', re: /lecture note|note|筆記|講義|slide|exercise|練習|worksheet|assignment/i }
+];
+
+function outlookClientId() {
+  var v = ($id('outlookClientId') ? $id('outlookClientId').value : '').trim();
+  return v || LS.get('outlookClientId', '');
+}
+function outlookTenant() {
+  var v = ($id('outlookTenant') ? $id('outlookTenant').value : '').trim();
+  return v || LS.get('outlookTenant', 'common') || 'common';
+}
+function outlookScopes() { return ['Calendars.Read', 'Mail.Read']; }
+function outlookStatus(msg, isErr) {
+  var st = $id('outlookStatus');
+  if (st) st.innerHTML = '狀態：' + (isErr ? '❌ ' : '') + msg;
+}
+function outlookInitMsal() {
+  if (_msalApp) return _msalApp;
+  if (typeof msal === 'undefined' || !msal.PublicClientApplication) return null;
+  var cid = outlookClientId();
+  if (!cid) return null;
+  try {
+    _msalApp = new msal.PublicClientApplication({
+      auth: {
+        clientId: cid,
+        authority: 'https://login.microsoftonline.com/' + outlookTenant(),
+        redirectUri: location.origin + location.pathname
+      },
+      cache: { cacheLocation: 'localStorage' }
+    });
+    return _msalApp;
+  } catch (e) { return null; }
+}
+function outlookEnsureInit(app) {
+  if (app && typeof app.initialize === 'function') {
+    try { var p = app.initialize(); return (p && p.then) ? p : Promise.resolve(); } catch (e) { return Promise.resolve(); }
+  }
+  return Promise.resolve();
+}
+function outlookAccount() {
+  if (!_msalApp) return null;
+  try { var a = _msalApp.getAllAccounts(); return (a && a.length) ? a[0] : null; } catch (e) { return null; }
+}
+function outlookConnect() {
+  var cid = outlookClientId();
+  if (!cid) { toast('請先填 Entra ID 應用程式 (client) ID'); return; }
+  LS.set('outlookClientId', cid);
+  LS.set('outlookTenant', outlookTenant());
+  var app = outlookInitMsal();
+  if (!app) { outlookStatus('MSAL 載入失敗 — 請檢查網絡（需要載入 jsdelivr 嘅 msal-browser）', true); return; }
+  if ('Notification' in window && Notification.permission === 'default') { try { Notification.requestPermission(); } catch (e) {} }
+  outlookStatus('⏳ 正在連接 Outlook（彈出 Microsoft 登入）…');
+  outlookEnsureInit(app).then(function () {
+    return app.loginPopup(outlookScopes());
+  }).then(function (resp) {
+    LS.set('outlookAccount', resp.account.username);
+    outlookStatus('✅ 已連接：' + esc(resp.account.username) + '。可按「同步行事曆 / 同步郵件」更新資料。');
+    toast('Outlook 連接成功 ✓');
+    renderOutlook();
+  }).catch(function (e) {
+    var msg = (e && (e.message || e.errorMessage)) ? (e.message || e.errorMessage) : ('' + e);
+    outlookStatus('❌ 連接失敗 — ' + esc(msg) + '。若提示「需要管理員批准」，請向 PolyU ITS 申請 admin consent，或改開只 Calendars.Read。', true);
+    toast('Outlook 連接失敗');
+  });
+}
+function outlookGetToken() {
+  return new Promise(function (resolve, reject) {
+    var app = outlookInitMsal();
+    if (!app) { reject(new Error('MSAL 未初始化（請先填 client ID 並連接）')); return; }
+    var acc = outlookAccount();
+    if (!acc) { reject(new Error('請先按「連接 Outlook」登入')); return; }
+    outlookEnsureInit(app).then(function () {
+      app.acquireTokenSilent({ scopes: outlookScopes(), account: acc }).then(resolve).catch(function () {
+        app.loginPopup(outlookScopes()).then(function (r) {
+          app.acquireTokenSilent({ scopes: outlookScopes(), account: r.account || acc }).then(function (r2) { resolve(r2.accessToken); }).catch(reject);
+        }).catch(reject);
+      });
+    }).catch(reject);
+  });
+}
+function graphFetch(url, token) {
+  return fetch(url, { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } }).then(function (res) {
+    if (!res.ok) {
+      if (res.status === 403) throw new Error('403 禁止 — 權限不足或需 admin consent（' + url.split('?')[0] + '）');
+      if (res.status === 401) throw new Error('401 未授權 — Token 失效，請重連');
+      throw new Error('Graph ' + res.status);
+    }
+    return res.json();
+  });
+}
+function classifyOutlook(text) {
+  for (var i = 0; i < OUTLOOK_RULES.length; i++) { if (OUTLOOK_RULES[i].re.test(text)) return OUTLOOK_RULES[i]; }
+  return null;
+}
+function extractDate(text) {
+  var m = text.match(/(20\d{2}[-/]\d{1,2}[-/]\d{1,2})/) || text.match(/\b(\d{1,2})[/\-.](\d{1,2})(?:[/\-.](\d{2,4}))?\b/);
+  if (!m) return '';
+  try {
+    if (m[0].indexOf('20') === 0) return m[0].slice(0, 10);
+    var y = new Date().getFullYear(), mm = parseInt(m[2], 10), dd = parseInt(m[1], 10);
+    if (mm > 12 && dd <= 12) { var t = mm; mm = dd; dd = t; }
+    return y + '-' + ('0' + mm).slice(-2) + '-' + ('0' + dd).slice(-2);
+  } catch (e) { return ''; }
+}
+function outlookSyncCalendar() {
+  outlookStatus('⏳ 同步行事曆中…');
+  outlookGetToken().then(function (token) {
+    var now = new Date(), end = new Date(); end.setMonth(end.getMonth() + 4);
+    var url = GRAPH + '/me/calendarView?startDateTime=' + encodeURIComponent(now.toISOString()) +
+      '&endDateTime=' + encodeURIComponent(end.toISOString()) +
+      '&$select=subject,start,end,location,bodyPreview&$orderby=start/dateTime&$top=120';
+    return graphFetch(url, token);
+  }).then(function (data) {
+    var evs = (data.value || []).map(function (e) {
+      var subj = e.subject || '';
+      var dt = (e.start && e.start.dateTime) ? new Date(e.start.dateTime) : null;
+      var rule = classifyOutlook(subj + ' ' + (e.bodyPreview || ''));
+      return {
+        subject: subj,
+        date: dt ? dt.toISOString().slice(0, 10) : '',
+        time: dt ? dt.toTimeString().slice(0, 5) : '',
+        loc: (e.location && e.location.displayName) || '',
+        cat: rule ? rule.cat : '', emo: rule ? rule.emo : '📅'
+      };
+    });
+    outlookCal = evs;
+    var autoTodo = !$id('outlookAutoTodo') || $id('outlookAutoTodo').checked !== false;
+    if (autoTodo) {
+      var todos = LS.get('todos', []), exist = {}; todos.forEach(function (t) { exist[t.t + '|' + t.due] = 1; });
+      var added = 0;
+      evs.forEach(function (ev) {
+        if (ev.cat && /考試|測驗|Exam|Test/i.test(ev.cat) && ev.date) {
+          var title = (ev.emo || '') + ' ' + ev.subject + (ev.loc ? ' @ ' + ev.loc : '');
+          if (!exist[title + '|' + ev.date]) { todos.push({ t: title, cat: 'Outlook', due: ev.date, done: false }); exist[title + '|' + ev.date] = 1; added++; }
+        }
+      });
+      if (added) { LS.set('todos', todos); renderTodos(); renderDashboard(); renderNotifs(); }
+    }
+    LS.set('outlookCal', outlookCal);
+    LS.set('outlookLastSync', new Date().toISOString());
+    outlookStatus('✅ 行事曆已同步（' + outlookCal.length + ' 項，未來 4 個月）。' + (autoTodo ? ' 考試/測驗已加入 DDL。' : ''));
+    renderOutlook();
+  }).catch(function (e) { outlookStatus('❌ 同步失敗 — ' + esc((e && e.message) || e), true); });
+}
+function outlookSyncMail() {
+  outlookStatus('⏳ 同步郵件資訊中…');
+  outlookGetToken().then(function (token) {
+    var url = GRAPH + '/me/messages?$select=subject,receivedDateTime,bodyPreview,from&$top=80&$orderby=receivedDateTime desc';
+    return graphFetch(url, token);
+  }).then(function (data) {
+    var items = [];
+    var autoTodo = !$id('outlookAutoTodo') || $id('outlookAutoTodo').checked !== false;
+    var todos = LS.get('todos', []), exist = {}; todos.forEach(function (t) { exist[t.t + '|' + t.due] = 1; });
+    var added = 0;
+    (data.value || []).forEach(function (m) {
+      var subj = m.subject || '';
+      var body = (m.bodyPreview || '') + ' ' + subj;
+      var rule = classifyOutlook(body);
+      if (!rule) return; /* 只收有關鍵字嘅重要資訊 */
+      var date = (m.receivedDateTime ? m.receivedDateTime.slice(0, 10) : '');
+      var due = extractDate(body) || date;
+      items.push({ subject: subj, cat: rule.cat, emo: rule.emo, received: date, due: due, from: (m.from && m.from.emailAddress && m.from.emailAddress.address) || '' });
+      if (autoTodo) {
+        var title = rule.emo + ' ' + subj;
+        if (!exist[title + '|' + due]) { todos.push({ t: title, cat: 'Outlook', due: due, done: false }); exist[title + '|' + due] = 1; added++; }
+      }
+    });
+    if (autoTodo && added) { LS.set('todos', todos); renderTodos(); renderDashboard(); renderNotifs(); }
+    outlookMail = items.slice(0, 60);
+    LS.set('outlookMail', outlookMail);
+    LS.set('outlookLastSync', new Date().toISOString());
+    outlookStatus('✅ 郵件已同步，搵到 ' + outlookMail.length + ' 項重要資訊（共掃 80 封）。' + (autoTodo ? ' 已加入 ' + added + ' 項待辦。' : ''));
+    renderOutlook();
+  }).catch(function (e) { outlookStatus('❌ 同步失敗 — ' + esc((e && e.message) || e), true); });
+}
+function renderOutlook() {
+  var calBox = $id('outlookCalList');
+  if (calBox) calBox.innerHTML = outlookCal.length ? outlookCal.slice(0, 40).map(function (e) {
+    return '<div class="alert-item"><span>' + (e.emo || '📅') + ' ' + esc(e.subject) +
+      (e.cat ? ' <small>[' + esc(e.cat) + ']</small>' : '') +
+      (e.loc ? '<br><small>📍 ' + esc(e.loc) + '</small>' : '') + '</span><span class="days">' +
+      esc(e.date + (e.time ? ' ' + e.time : '')) + '</span></div>';
+  }).join('') : '<div class="alert-item"><span>暫無行事曆資料。</span></div>';
+  var mailBox = $id('outlookMailList');
+  if (mailBox) mailBox.innerHTML = outlookMail.length ? outlookMail.map(function (m) {
+    return '<div class="alert-item"><span>' + (m.emo || '✉️') + ' ' + esc(m.subject) + ' <small>[' + esc(m.cat) + ']</small></span><span class="days">' + esc(m.due || m.received) + '</span></div>';
+  }).join('') : '<div class="alert-item"><span>暫無郵件資訊（或尚未同步）。</span></div>';
+}
+function initOutlook() {
+  if ($id('outlookClientId')) $id('outlookClientId').value = LS.get('outlookClientId', '');
+  if ($id('outlookTenant')) $id('outlookTenant').value = LS.get('outlookTenant', '');
+  outlookInitMsal();
+  var acc = outlookAccount();
+  if (acc) outlookStatus('✅ 已連接：' + esc(acc.username) + '。可按「同步行事曆 / 同步郵件」更新。');
+  if ($id('outlookConnectBtn')) $id('outlookConnectBtn').onclick = outlookConnect;
+  if ($id('outlookDisconnectBtn')) $id('outlookDisconnectBtn').onclick = function () {
+    LS.del('outlookAccount'); LS.del('outlookClientId'); LS.del('outlookTenant');
+    if (_msalApp) { try { _msalApp.logoutPopup && _msalApp.logoutPopup(); } catch (e) {} }
+    _msalApp = null; outlookCal = []; outlookMail = [];
+    outlookStatus('已斷開（如需徹底清除 MSAL 緩存，請清瀏覽器網站資料）。'); renderOutlook();
+    toast('已斷開 Outlook');
+  };
+  if ($id('outlookSyncCalBtn')) $id('outlookSyncCalBtn').onclick = outlookSyncCalendar;
+  if ($id('outlookSyncMailBtn')) $id('outlookSyncMailBtn').onclick = outlookSyncMail;
+  outlookCal = LS.get('outlookCal', []); outlookMail = LS.get('outlookMail', []);
+  renderOutlook();
+}
+
+/* ============================================================
    🆕 v2.3.1 智慧生成待辦：掃描 Dashboard 截止日期 / 報名事項
    來源：學校日程 · 交換材料清單 · 資助申請 · 求職面試 · WIE 時數
    ============================================================ */
@@ -3648,7 +3878,7 @@ function initGlobal() {
    ============================================================ */
 function renderAll() {
   renderDashboard(); renderReg(); renderWie(); renderExchange(); renderFunding();
-  renderResume(); renderJobs(); renderTodos(); renderInfo(); renderCanvas();
+  renderResume(); renderJobs(); renderTodos(); renderInfo(); renderCanvas(); renderOutlook();
   renderLibrary(); renderIp(); renderStudy(); renderLyProfile();
   renderBfDash(); renderBfSubjects(); renderBfPrograms(); renderBfMaterials();
   renderBfCv(); renderBfTimeline(); renderBfCareer(); renderBfProfile();
@@ -3683,7 +3913,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   initReg(); initWie(); initExchange(); initFunding(); initResume(); initJobs();
-  initTodos(); initInfo(); initCanvas(); initLibrary(); initIp(); initStudy(); initLyProfile();
+  initTodos(); initInfo(); initCanvas(); initOutlook(); initLibrary(); initIp(); initStudy(); initLyProfile();
   initBfDash(); initBfSubjects(); initBfPrograms(); initBfMaterials();
   initBfCv(); initBfTimeline(); initBfCareer(); initBfProfile();
   initNotifUI(); initLoki(); initGlobal();

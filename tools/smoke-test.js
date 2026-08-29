@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.8', (d.getElementById('verTag') || {}).textContent === 'v2.3.8', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.9', (d.getElementById('verTag') || {}).textContent === 'v2.3.9', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -72,7 +72,11 @@ setTimeout(() => {
   chk('canvasCourses 有初始內容', (d.getElementById('canvasCourses') || { innerHTML: '' }).innerHTML.length > 0);
 
   // 導航數目
-  chk('導航項 30 個', d.querySelectorAll('.nav-item').length === 30, String(d.querySelectorAll('.nav-item').length));
+  chk('導航項 31 個', d.querySelectorAll('.nav-item').length === 31, String(d.querySelectorAll('.nav-item').length));
+  chk('page-outlook 存在', !!d.getElementById('page-outlook'));
+  chk('outlookConnectBtn 已綁定 onclick', !!(d.getElementById('outlookConnectBtn') && d.getElementById('outlookConnectBtn').onclick));
+  chk('outlookSyncCalBtn 已綁定 onclick', !!(d.getElementById('outlookSyncCalBtn') && d.getElementById('outlookSyncCalBtn').onclick));
+  chk('outlookSyncMailBtn 已綁定 onclick', !!(d.getElementById('outlookSyncMailBtn') && d.getElementById('outlookSyncMailBtn').onclick));
 
   let fail = 0;
   checks.forEach(c => {
