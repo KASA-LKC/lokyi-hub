@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lok Yi Hub — Canvas &amp; Outlook 連接完整教程</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --ink:#1f2937; --muted:#4b5563;
+    --line:#e5e7eb; --brand:#2563eb; --brand-soft:#eff6ff;
+    --green:#16a34a; --green-soft:#ecfdf5; --amber:#d97706; --amber-soft:#fffbeb;
+    --red:#dc2626; --red-soft:#fef2f2; --code-bg:#0f172a; --code-ink:#e2e8f0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang HK","Microsoft JhengHei",sans-serif;
+    line-height:1.7;font-size:16px}
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 64px}
+  header.top{background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border-radius:16px;
+    padding:28px 28px 24px;margin-bottom:24px;box-shadow:0 6px 20px rgba(37,99,235,.25)}
+  header.top h1{margin:0 0 8px;font-size:24px;letter-spacing:.5px}
+  header.top .meta{font-size:13px;opacity:.92;background:rgba(255,255,255,.12);
+    display:inline-block;padding:6px 12px;border-radius:8px;margin-top:6px}
+  h2.part{font-size:21px;margin:34px 0 14px;padding-left:12px;border-left:6px solid var(--brand);color:#1d4ed8}
+  h3{font-size:17px;margin:22px 0 8px;color:#111827}
+  p{margin:10px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .note{background:var(--amber-soft);border:1px solid #fde68a;border-left:5px solid var(--amber);
+    border-radius:10px;padding:14px 16px;margin:16px 0;color:#7c2d12}
+  .note b{color:#92400e}
+  .ok{background:var(--green-soft);border:1px solid #bbf7d0;border-left:5px solid var(--green);
+    border-radius:10px;padding:14px 16px;margin:16px 0;color:#14532d}
+  .warn{background:var(--red-soft);border:1px solid #fecaca;border-left:5px solid var(--red);
+    border-radius:10px;padding:12px 16px;margin:12px 0;color:#991b1b}
+  .keypoint{background:var(--brand-soft);border:1px solid #bfdbfe;border-radius:12px;
+    padding:16px 20px;margin:18px 0}
+  .keypoint h3{margin-top:0;color:#1e3a8a}
+  table{border-collapse:collapse;width:100%;margin:14px 0;background:#fff;border-radius:12px;overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,.05);font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  th{background:#1e3a8a;color:#fff;font-weight:600}
+  tbody tr:nth-child(even){background:#f8fafc}
+  ol,ul{margin:10px 0;padding-left:22px}
+  li{margin:6px 0}
+  code{background:#eef2ff;color:#3730a3;padding:2px 6px;border-radius:5px;font-size:13.5px;
+    font-family:"SFMono-Regular",Consolas,Menlo,monospace}
+  pre{background:var(--code-bg);color:var(--code-ink);padding:16px 18px;border-radius:10px;
+    overflow:auto;font-size:13px;line-height:1.55;font-family:"SFMono-Regular",Consolas,Menlo,monospace}
+  pre code{background:none;color:inherit;padding:0}
+  .tag{display:inline-block;background:var(--brand);color:#fff;font-size:12px;font-weight:600;
+    padding:2px 9px;border-radius:6px;margin-right:4px}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 20px;margin:18px 0}
+  .toc a{color:var(--brand);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .step{font-weight:700;color:#1e40af}
+  .foot{margin-top:30px;font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:14px}
+  hr{border:none;border-top:1px solid var(--line);margin:28px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Lok Yi Hub — Canvas &amp; Outlook 連接完整教程</h1>
+    <div class="meta">版本：v2.3.11（已 push 上 GitHub，remote = <code style="background:rgba(255,255,255,.2);color:#fff">34356c3</code>）</div>
+    <div class="meta">適用：開 dashboard 後，左側 menu 有「🎨 Canvas 連接」同「📧 Outlook 連接」兩頁</div>
+    <div class="meta">開 dashboard：瀏覽器開 <code style="background:rgba(255,255,255,.2);color:#fff">http://localhost:8899/</code>（未開就喺 lokyi-hub 資料夾跑 <code style="background:rgba(255,255,255,.2);color:#fff">python3 -m http.server 8899</code>）</div>
+  </header>
+
+  <div class="toc">
+    <b>目錄</b>
+    <ol>
+      <li><a href="#keypoint">先講重點（非常重要）</a></li>
+      <li><a href="#partA">PART A ｜ Canvas 自動連接</a></li>
+      <li><a href="#partB">PART B ｜ Outlook 自動連接</a></li>
+      <li><a href="#partC">PART C ｜ 手動匯入（後備）</a></li>
+      <li><a href="#maint">日常維護 ｜ 教授不斷加新嘢點辦？</a></li>
+      <li><a href="#done">做完之後</a></li>
+    </ol>
+  </div>
+
+  <div class="keypoint" id="keypoint">
+    <h3>先講重點（非常重要）</h3>
+    <p>你而家想要 <b>Canvas + Outlook 都自動連接</b>。但實測證實：</p>
+    <ul>
+      <li><b>Canvas 自動</b>：學校禁咗學生自己開 API Token（<code>+ New Access Token</code> 變灰，寫住「administrators have chosen to limit your ability to generate your own access token」）。</li>
+      <li><b>Outlook 自動</b>：學生 account 入唔到 Entra admin center，即係註冊唔到 App，亦攞唔到 admin consent 讀你嘅郵件 / 行事曆。</li>
+    </ul>
+    <p><b>結論</b>：兩個自動連接都要 <span class="tag">PolyU ITS 批准</span> 先啱。下面 PART A / PART B 係「點寫信問 ITS 批」+「批咗之後點連」。手動匯入（PART C）係後備，唔使批都用得。</p>
+  </div>
+
+  <table>
+    <thead><tr><th>功能</th><th>自動方式</th><th>需要學校批准？</th><th>目前最實際做法</th></tr></thead>
+    <tbody>
+      <tr><td><b>Canvas（自動）</b></td><td>個人 API Token</td><td>✅ 要（ITS 代開 / 批權）</td><td>問 ITS → 批咗貼 token</td></tr>
+      <tr><td><b>Canvas（手動）</b></td><td>貼 Assignments 文字</td><td>❌ 唔使</td><td>後備，隨時用</td></tr>
+      <tr><td><b>Outlook（自動）</b></td><td>Entra App + admin consent</td><td>✅ 要</td><td>問 ITS → 批咗貼 client/tenant id</td></tr>
+      <tr><td><b>Outlook（手動）</b></td><td>.ics + 郵件貼上</td><td>❌ 唔使</td><td>後備，隨時用</td></tr>
+    </tbody>
+  </table>
+
+  <!-- PART A -->
+  <h2 class="part" id="partA">PART A ｜ Canvas 自動連接（問 ITS 批 → 啟用）</h2>
+
+  <h3>A1 — 發申請信畀 PolyU ITS</h3>
+  <div class="note">你之前已經 send 過一封去 IT Online ServiceDesk。如果仲未收到回覆，可以照下面呢封再 send 一次（直接 copy 貼落 email / ServiceDesk form 都得）。</div>
+
+  <p><b>收件人（揀一個）：</b></p>
+  <ul>
+    <li>IT Online ServiceDesk 網頁 form：<code>https://www.polyu.edu.hk/its/</code>（搵「ServiceDesk / Report a problem」）</li>
+    <li>或者直接 email（試多個 CC 保險）：<code>servicedesk@polyu.edu.hk</code> / <code>helpdesk@polyu.edu.hk</code> / <code>it.service@polyu.edu.hk</code></li>
+    <li class="warn" style="list-style:none">⚠️ 唔好用 <code>itsupport@polyu.edu.hk</code>（之前試過 bounce，地址唔存在）</li>
+  </ul>
+
+  <p><b>Subject：</b><br><code>Request for Canvas Personal Access Token for Student Personal Dashboard (SID: 26017276D)</code></p>
+
+  <p><b>Email 內容（copy 貼）：</b></p>
+  <pre><code>Dear PolyU ITS / Canvas Administrator,
+
+I am writing to request assistance with generating a Canvas API access token for my personal academic dashboard.
+
+When I navigate to Canvas → Account → Settings → Approved Integrations and click "+ New Access Token", I receive:
+"Your Canvas administrators have chosen to limit your ability to generate your own access token. Please reach out to your Canvas administrators to have them generate an access token on your behalf."
+
+I am a student (Student ID: 26017276D) and would like to use the token to access ONLY my own Canvas data (enrolled courses, assignments, due dates) through a personal dashboard I am building. The token will be stored locally on my device and will NOT be shared with any third-party service.
+
+Could you please either:
+1. Generate a personal access token on my behalf, or
+2. Advise on the official process for students to obtain API access for personal academic tools?
+
+Thank you for your time and assistance.
+
+Best regards,
+Lok Yi Chan
+Student ID: 26017276D
+Email: 26017276d@connect.polyu.edu.hk</code></pre>
+
+  <h3>A2 — 批咗之後：攞 Token + 喺 dashboard 連接</h3>
+  <ol>
+    <li>ITS 回覆通常會畀你一條 token 字串（例如 <code>12345~abcdef...</code>），或叫你去某個地方攞。<b>即刻複製</b>。</li>
+    <li>開 dashboard（<code>http://localhost:8899/</code>），左側 menu 撳 <b>「🎨 Canvas 連接」</b>。</li>
+    <li>第一格 input（placeholder 寫「Canvas API Token…」）貼上 token。</li>
+    <li>撳 <b>「💾 儲存 &amp; 連接」</b>（淨填唔撳唔算）。</li>
+    <li>系統自動同步，頂部「狀態」變做「已儲存 Token…」。</li>
+  </ol>
+
+  <h3>A3 — 確認連到</h3>
+  <ul>
+    <li>撳 <b>「🔄 立即同步」</b> 再確認一次。</li>
+    <li>下面兩張卡出內容即成功：
+      <ul>
+        <li><b>📚 我嘅 Canvas 課程</b> → 📘 課程名（例如 HTM 3025…）</li>
+        <li><b>⏰ 即將到期作業 / 考試</b> → 📝 作業名 + 截止日期</li>
+      </ul>
+    </li>
+    <li>Token 只存你部機 browser（localStorage <code>lyhub_canvasToken</code>），唔上傳。</li>
+    <li>想斷開：撳 <b>「🗑 清除 Token」</b>。</li>
+  </ul>
+
+  <!-- PART B -->
+  <h2 class="part" id="partB">PART B ｜ Outlook 自動連接（問 ITS 批 → 啟用）</h2>
+
+  <h3>B1 — 發申請信畀 PolyU ITS</h3>
+  <div class="note">Outlook 自動需要喺 Entra ID 註冊一個 App 並獲 admin consent。學生冇權，所以要 ITS 幫手。Copy 下面呢封 send 去同一個 IT Online ServiceDesk / email。</div>
+
+  <p><b>Subject：</b><br><code>Request for Microsoft Entra App Registration &amp; Admin Consent for Student Personal Dashboard (Outlook Calendar/Email) — SID: 26017276D</code></p>
+
+  <p><b>Email 內容（copy 貼）：</b></p>
+  <pre><code>Dear PolyU ITS / Microsoft 365 Administrator,
+
+I am a student (Student ID: 26017276D) building a personal academic dashboard to manage my class schedule and deadlines. I would like it to read my own PolyU Outlook calendar and emails via the Microsoft Graph API, using browser-based OAuth (MSAL).
+
+To do this, I need one of the following:
+1. Permission to register an application in Microsoft Entra ID (Single-tenant, PolyU only), OR
+2. An administrator to register the app and grant admin consent for these delegated permissions (which only access my own mailbox/calendar):
+   - Calendars.Read
+   - Mail.Read
+
+The app uses the Authorization Code flow with PKCE (SPA redirect), stores all tokens locally in the user's browser, and sends no data to any third-party server. It will only ever read my own data.
+
+Could you please advise whether this is possible, or if PolyU has an official process for student app registration / admin consent? If you register the app on my behalf, please share the Application (client) ID and Directory (tenant) ID so I can complete the connection in my dashboard.
+
+Thank you for your time and assistance.
+Best regards,
+Lok Yi Chan
+Student ID: 26017276D
+Email: 26017276d@connect.polyu.edu.hk</code></pre>
+
+  <h3>B2 — 批咗之後：註冊 App / 攞 ID + 喺 dashboard 連接</h3>
+
+  <div class="card">
+    <p><b>情況一：ITS 幫你註冊好 App，直接畀你 client ID + tenant ID</b></p>
+    <ol>
+      <li>開 dashboard，左側 menu 撳 <b>「📧 Outlook 連接」</b>。</li>
+      <li>第一格 input（placeholder 寫「Entra ID 應用程式 (client) ID」）貼 <b>client ID</b>。</li>
+      <li>第二格 input（placeholder 寫「Tenant ID（留空用 common）」）貼 <b>tenant ID</b>（<b>唔可以留空</b>，因為係 PolyU 單一租戶 App）。</li>
+      <li>確保 <b>「自動加入待辦」</b> 同 <b>「到期前通知」</b> 方格剔咗。</li>
+      <li>撳 <b>「🔗 連接 Outlook」</b> → 彈 Microsoft 登入窗 → 用學校 account 授權。</li>
+      <li>見「✅ 已連接」即成功。</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <p><b>情況二：ITS 開咗權限，你自已註冊 App</b></p>
+    <ol>
+      <li>瀏覽器開 <code>https://entra.microsoft.com</code> ，用學校 account 登入。</li>
+      <li>左手邊 <b>Identity → Applications → App registrations</b> → <b>＋ New registration</b>。</li>
+      <li>Name 填 <code>Lok Yi Hub</code>；Account types 揀 <b>Accounts in this organizational directory only (PolyU only)</b>。</li>
+      <li>Redirect URI：Platform 揀 <b>Single-page application (SPA)</b>，value 填你開 dashboard 個網址（例如 <code>http://localhost:8899/</code>）。撳 Add URI 再加 <code>http://localhost:8899/index.html</code>。</li>
+      <li>撳 <b>Register</b> → 抄低 <b>Application (client) ID</b> 同 <b>Directory (tenant) ID</b>。</li>
+      <li>個 App 頁 → <b>API permissions</b> → <b>＋ Add a permission</b> → Microsoft Graph → Delegated：加 <code>Calendars.Read</code> 同 <code>Mail.Read</code> → 撳 <b>Grant admin consent for PolyU</b>（呢下通常要 admin 權，所以先要 ITS 批）。</li>
+      <li>返 dashboard「📧 Outlook 連接」，照情況一步驟 2–6 貼 ID 連接。</li>
+    </ol>
+  </div>
+
+  <h3>B3 — 確認連到 + 同步</h3>
+  <ul>
+    <li>撳 <b>「📅 同步行事曆」</b>（未來 4 個月嘅改堂 / 考試 / 活動；考試測驗自動入 DDL）。</li>
+    <li>撳 <b>「✉️ 同步郵件資訊」</b>（掃 80 封，搵 assignment / test / exam / exchange / club / notes 入待辦）。</li>
+    <li>見到「✅ 已連接：…」同下面 list 有嘢即成功。</li>
+  </ul>
+
+  <div class="warn"><b>出錯對號入座</b>
+    <ul style="margin:8px 0 0">
+      <li>彈「Need admin approval / 需要管理員批准」→ admin consent 未批，搵 ITS。</li>
+      <li>AADSTS50011 / redirect URI 唔匹配 → Entra 個 Redirect URI 要同你地址欄完全一樣。</li>
+      <li>MSAL 載入失敗 → 檢查網絡、刷新再試。</li>
+    </ul>
+  </div>
+
+  <!-- PART C -->
+  <h2 class="part" id="partC">PART C ｜ 手動匯入（後備，學校未批時直接用，已做）</h2>
+  <div class="note">全部喺你部機 browser 處理，唔使經 PolyU admin，唔上傳任何 server。對應 dashboard v2.3.10（Outlook）+ v2.3.11（Canvas）。</div>
+
+  <h3>C1 — Canvas 手動匯入</h3>
+  <ol>
+    <li>開 <code>https://canvas.polyu.edu.hk</code> → 入一科 → <b>Assignments</b>（或個人 Dashboard <b>To Do</b>）。</li>
+    <li>全選作業清單（<code>Cmd+A</code>），最好連埋 <b>課程名 + 作業名 + Due 日期</b>（例：<code>HTM 3025 / Assignment 1: Research Proposal / Due Sep 10 at 11:59pm</code>），複製（<code>Cmd+C</code>）。</li>
+    <li>返 dashboard「🎨 Canvas 連接」→ 落去 <b>「📥 手動匯入」</b> 卡，大格貼上（<code>Cmd+V</code>）。</li>
+    <li>確保 <b>「自動加入待辦 / DDL」</b> 方格剔咗 → 撳 <b>「🔍 解析 Canvas 內容」</b>。</li>
+    <li>見「✅ 解析到 N 項作業，已加入 M 項待辦」→ 上面「⏰ 即將到期作業 / 考試」出晒，相關自動入「待辦 / DDL」。</li>
+  </ol>
+  <p>支援：<code>Sep 10</code> / <code>Sep 10, 2026</code> / <code>Sep 10 at 11:59pm</code> / <code>2026-09-10</code> / <code>10/09/2026</code>；課程碼 <code>HTM 3025</code> / <code>ENGL1A28</code> 等。無日期會跳過。新作業要重貼（自動去重）。</p>
+
+  <h3>C2 — Outlook 手動匯入（行事曆 .ics）</h3>
+  <ol>
+    <li>匯出 <code>.ics</code>：
+      <ul>
+        <li>Outlook 網頁版 → Calendar → 設定 → 檢視所有 Outlook 設定 → 行事曆 → 共用行事曆 → 發佈（權限揀「可檢視所有詳細資料」）→ 複製 ICS link → 新 tab 開佢 download。</li>
+        <li>或 Apple Calendar app：對住你 PolyU 帳號下嘅 Calendar <b>right-click → 輸出…</b> → <code>Calendar.ics</code>。</li>
+        <li>或 Outlook 桌面 app：Calendar → File → Export → Export to a File → iCalendar Format (.ics)。</li>
+      </ul>
+    </li>
+    <li>返 dashboard「📧 Outlook 連接」→「📥 手動匯入」卡 → 撳 file input 揀 <code>.ics</code> → 撳 <b>「📥 匯入行事曆 (.ics)」</b>。</li>
+    <li>見「✅ 已匯入 N 項行事曆」→ 上面「📅 來自行事曆嘅事項」出晒；考試 / 測驗自動入 DDL。</li>
+  </ol>
+
+  <h3>C3 — Outlook 手動匯入（郵件貼上）</h3>
+  <ol>
+    <li>Outlook 開一封重要 email（assignment deadline / 改堂通知）→ 全選（<code>Cmd+A</code>）→ 複製（<code>Cmd+C</code>）。</li>
+    <li>返 dashboard「📧 Outlook 連接」→「📥 手動匯入」卡 → 大格貼上（<code>Cmd+V</code>）。幾封之間留空白行或一封一封貼。</li>
+    <li>確保 <b>「自動加入待辦 / DDL」</b> 方格剔咗 → 撳 <b>「🔍 解析郵件內容」</b>。</li>
+    <li>見「✅ 搵到 N 封重要郵件，已加入 M 項待辦」→ 右邊「✉️ 郵件中的重要資訊」出嚟，相關自動入「待辦 / DDL」。</li>
+  </ol>
+  <p><code>.ics</code> 係快照，有新嘢要重 export 重匯入（自動去重）。想清走撳「🚪 斷開」。</p>
+
+  <!-- 日常維護 -->
+  <h2 class="part" id="maint">日常維護 ｜ 教授不斷加新嘢，我點辦？</h2>
+  <div class="note">無論自動定手動，dashboard 都唔會「自動感應」到新嘢，你要主動更新一次。下面係每次教授加新 assignment / 改堂 / 新郵件時要做嘅動作。</div>
+
+  <h3>情況一：自動連接已經批到（PART A / B 成功）</h3>
+  <ul>
+    <li><b>Canvas</b>：返 dashboard「🎨 Canvas 連接」→ 撳 <b>「🔄 立即同步」</b> 一次，全拉最新課程 + 作業。零複製，最慳力。</li>
+    <li><b>Outlook</b>：返「📧 Outlook 連接」→ 撳 <b>「📅 同步行事曆」</b>（拉最新 4 個月日程）+ <b>「✉️ 同步郵件資訊」</b>（掃最新 80 封）。</li>
+    <li>✅ 呢個情況下你完全唔使 copy 任何嘢，撳掣就得。</li>
+  </ul>
+
+  <h3>情況二：仲係手動（學校未批，用 PART C）</h3>
+  <ul>
+    <li><b>Canvas</b>：返 Canvas → 入科 → Assignments（或 To Do）→ <b>重新全選 copy 成個 list</b> → 返 dashboard「🎨 Canvas 連接」→「📥 手動匯入」→ 貼上 → 撳 <b>「🔍 解析 Canvas 內容」</b>。
+      <br><span class="ok">⭐ 唔使記住邊啲係新嘅 —— 成個 list 再貼一次就得，系統會<b>自動去重</b>，舊嘅唔會變兩倍。</span>
+    </li>
+    <li><b>Outlook 行事曆</b>：重新 export 個 <code>.ics</code>（Outlook 網頁版發佈 ICS link / Apple Calendar 輸出）→ 返「📧 Outlook 連接」→「📥 手動匯入」→ 重新揀檔 → 撳 <b>「📥 匯入行事曆 (.ics)」</b>（自動去重）。</li>
+    <li><b>Outlook 郵件</b>：將<b>新收到嘅重要 email</b> copy 落大格 → 撳 <b>「🔍 解析郵件內容」</b>（按主旨去重，舊嘅唔會重複入）。</li>
+  </ul>
+
+  <h3>實用建議</h3>
+  <ul>
+    <li><b>頻率</b>：建議每週一次（例如星期日），或者收到教授通知「有 new assignment / 改堂」就即 update。</li>
+    <li><b>最慳力做法</b>：優先搞掂 PART A / B 自動連接（send 咗申請信就等回覆），批到之後全部變「撳一掣」。</li>
+    <li><b>去重放心</b>：手動匯入重貼幾次都冇副作用，唔會重複 count，所以可以「懶人式」成個 list 再貼。</li>
+    <li><b>斷開 / 清走</b>：Canvas 撳「🗑 清除 Token」；Outlook 撳「🚪 斷開」；手動匯入各自有「清除」掣。</li>
+  </ul>
+
+  <!-- 做完之後 -->
+  <h2 class="part" id="done">做完之後</h2>
+  <ul>
+    <li><b>自動路徑</b>（批咗）：Canvas 連一次就搞掂，之後撳「🔄 立即同步」更新；Outlook 連一次後撳「📅 同步行事曆」/「✉️ 同步郵件資訊」更新。</li>
+    <li><b>手動路徑</b>（後備）：每次有新嘢要重複匯入。</li>
+    <li>兩樣資料都只存你部機 browser，唔上傳。</li>
+    <li>建議：兩封 ITS 申請信（PART A1 + PART B1）都 send 咗之後，等 1–3 個工作天睇回覆；期間用手動匯入（PART C）頂住。</li>
+  </ul>
+
+  <div class="foot">
+    呢份指南對應嘅 dashboard 改動（v2.3.10 <code>a4c2c57</code> + v2.3.11 <code>611090b</code> + 指南更新）已經 push 上 GitHub，remote = <code>34356c3</code>（v2.3.11），本地同 GitHub 同步。
+  </div>
+
+</div>
+</body>
+</html>

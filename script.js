@@ -4021,6 +4021,106 @@ function initDiary() {
 }
 
 /* ============================================================
+   🆕 v2.3.12 記事本 Notes（LY + BF 各一份獨立）
+   ============================================================ */
+function initNotes(acct) {
+  var cap = acct === 'bf' ? 'Bf' : 'Ly';
+  var listEl = $id('notesList' + cap);
+  var titleEl = $id('notesTitle' + cap);
+  var bodyEl = $id('notesBody' + cap);
+  var metaEl = $id('notesMeta' + cap);
+  var countEl = $id('notesCount' + cap);
+  var newBtn = $id('notesNew' + cap);
+  var delBtn = $id('notesDel' + cap);
+  var searchEl = $id('notesSearch' + cap);
+  if (!listEl || !titleEl || !bodyEl) return;
+
+  var curId = null;
+  function load() {
+    if (acct === 'bf') { try { return JSON.parse(localStorage.getItem('bf_notes') || '[]'); } catch (e) { return []; } }
+    return LS.get('notes', []);
+  }
+  function save(arr) {
+    if (acct === 'bf') localStorage.setItem('bf_notes', JSON.stringify(arr));
+    else LS.set('notes', arr);
+  }
+  function fmt(ts) {
+    if (!ts) return '';
+    try { return new Date(ts).toLocaleString('zh-Hant', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
+  }
+  function render() {
+    var arr = load();
+    if (countEl) countEl.textContent = '· 共 ' + arr.length + ' 則';
+    var q = (searchEl && searchEl.value || '').trim().toLowerCase();
+    listEl.innerHTML = '';
+    var filtered = q ? arr.filter(function (n) { return ((n.title || '') + ' ' + (n.body || '')).toLowerCase().indexOf(q) >= 0; }) : arr;
+    if (!filtered.length) {
+      listEl.innerHTML = '<div class="notes-empty">' + (arr.length ? '冇符合嘅筆記' : '仲未有用筆記，撳「➕ 新筆記」開始 ✍️') + '</div>';
+      return;
+    }
+    filtered.forEach(function (n) {
+      var div = document.createElement('div');
+      div.className = 'notes-item' + (n.id === curId ? ' active' : '');
+      var title = (n.title || '').trim() || '（無標題）';
+      var sub = (n.body || '').replace(/\n/g, ' ').slice(0, 60) || '（空內容）';
+      div.innerHTML = '<div class="ni-title"></div><div class="ni-sub"></div><span class="ni-del" title="刪除">✕</span>';
+      div.querySelector('.ni-title').textContent = title;
+      div.querySelector('.ni-sub').textContent = (fmt(n.updated) + (sub ? ' · ' + sub : ''));
+      div.onclick = function (e) {
+        if (e.target && e.target.classList && e.target.classList.contains('ni-del')) { del(n.id); return; }
+        openNote(n.id);
+      };
+      listEl.appendChild(div);
+    });
+  }
+  function openNote(id) {
+    var arr = load();
+    var n = arr.filter(function (x) { return x.id === id; })[0];
+    if (!n) return;
+    curId = id;
+    titleEl.value = n.title || '';
+    bodyEl.value = n.body || '';
+    if (metaEl) metaEl.textContent = '更新於 ' + fmt(n.updated);
+    render();
+  }
+  function commit() {
+    var arr = load();
+    var t = titleEl.value, b = bodyEl.value;
+    if (curId) {
+      var n = arr.filter(function (x) { return x.id === curId; })[0];
+      if (n) { n.title = t; n.body = b; n.updated = Date.now(); }
+    } else {
+      if (!t.trim() && !b.trim()) return;
+      var rec = { id: uid(), title: t, body: b, updated: Date.now() };
+      arr.unshift(rec); curId = rec.id;
+    }
+    save(arr);
+    if (metaEl) metaEl.textContent = '更新於 ' + fmt(Date.now());
+    render();
+  }
+  function del(id) {
+    var arr = load();
+    var n = arr.filter(function (x) { return x.id === id; })[0];
+    var nm = (n && (n.title || '').trim()) || '呢則筆記';
+    if (!confirm('確定刪除「' + nm + '」？')) return;
+    arr = arr.filter(function (x) { return x.id !== id; });
+    save(arr);
+    if (curId === id) { curId = null; titleEl.value = ''; bodyEl.value = ''; if (metaEl) metaEl.textContent = ''; }
+    render();
+  }
+  if (newBtn) newBtn.onclick = function () {
+    curId = null; titleEl.value = ''; bodyEl.value = '';
+    if (metaEl) metaEl.textContent = '新筆記（寫嘢會自動儲存）';
+    titleEl.focus(); render();
+  };
+  if (delBtn) delBtn.onclick = function () { if (curId) del(curId); else toast('未有選中筆記'); };
+  if (titleEl) titleEl.oninput = commit;
+  if (bodyEl) bodyEl.oninput = commit;
+  if (searchEl) searchEl.oninput = render;
+  render();
+}
+
+/* ============================================================
    匯出 / 重設 / PWA 安裝
    ============================================================ */
 function initGlobal() {
@@ -4107,9 +4207,9 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   initReg(); initWie(); initExchange(); initFunding(); initResume(); initJobs();
-  initTodos(); initInfo(); initCanvas(); initOutlook(); initLibrary(); initIp(); initStudy(); initLyProfile();
+  initTodos(); initInfo(); initCanvas(); initOutlook(); initLibrary(); initIp(); initStudy(); initLyProfile(); initNotes('ly');
   initBfDash(); initBfSubjects(); initBfPrograms(); initBfMaterials();
-  initBfCv(); initBfTimeline(); initBfCareer(); initBfProfile();
+  initBfCv(); initBfTimeline(); initBfCareer(); initBfProfile(); initNotes('bf');
   initNotifUI(); initLoki(); initGlobal();
   /* 🆕 v2.1 */
   initTheme(); initImport(); initSearch(); initCalendar(); initGpaCalc(); initPrintResume();

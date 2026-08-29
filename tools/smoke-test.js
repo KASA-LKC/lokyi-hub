@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.11', (d.getElementById('verTag') || {}).textContent === 'v2.3.11', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.12', (d.getElementById('verTag') || {}).textContent === 'v2.3.12', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -75,7 +75,7 @@ setTimeout(() => {
   chk('canvasCourses 有初始內容', (d.getElementById('canvasCourses') || { innerHTML: '' }).innerHTML.length > 0);
 
   // 導航數目
-  chk('導航項 31 個', d.querySelectorAll('.nav-item').length === 31, String(d.querySelectorAll('.nav-item').length));
+  chk('導航項 33 個', d.querySelectorAll('.nav-item').length === 33, String(d.querySelectorAll('.nav-item').length));
   chk('page-outlook 存在', !!d.getElementById('page-outlook'));
   chk('outlookConnectBtn 已綁定 onclick', !!(d.getElementById('outlookConnectBtn') && d.getElementById('outlookConnectBtn').onclick));
   chk('outlookSyncCalBtn 已綁定 onclick', !!(d.getElementById('outlookSyncCalBtn') && d.getElementById('outlookSyncCalBtn').onclick));
@@ -84,6 +84,20 @@ setTimeout(() => {
   chk('mailPaste textarea 存在', !!d.getElementById('mailPaste'));
   chk('icsImportBtn 已綁定 onclick', !!(d.getElementById('icsImportBtn') && d.getElementById('icsImportBtn').onclick));
   chk('mailParseBtn 已綁定 onclick', !!(d.getElementById('mailParseBtn') && d.getElementById('mailParseBtn').onclick));
+
+  // 🆕 v2.3.12 記事本功能斷言
+  (function () {
+    var nt = d.getElementById('notesTitleLy'), nb = d.getElementById('notesBodyLy'), nn = d.getElementById('notesNewLy');
+    chk('記事本 LY 元素齊全', !!(nt && nb && nn));
+    if (nn) {
+      nn.click();
+      nt.value = '測試筆記'; if (nt.oninput) nt.oninput();
+      nb.value = 'hello body'; if (nb.oninput) nb.oninput();
+      var saved = (function () { try { return JSON.parse(d.defaultView.localStorage.getItem('lyhub_notes') || '[]'); } catch (e) { return []; } })();
+      chk('記事本 LY 新增後寫入 localStorage', saved.length === 1 && saved[0].title === '測試筆記', 'len=' + saved.length);
+      chk('記事本 LY 列表渲染 1 則', d.querySelectorAll('#notesListLy .notes-item').length === 1, String(d.querySelectorAll('#notesListLy .notes-item').length));
+    }
+  })();
 
   let fail = 0;
   checks.forEach(c => {

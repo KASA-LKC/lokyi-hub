@@ -63,6 +63,7 @@
     <a href="#" class="nav-item" data-target="ip" data-account="ly"><span class="ico">🎥</span><span>我的社交IP</span></a>
     <a href="#" class="nav-item" data-target="media" data-account="ly"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書+抖音</span></a>
     <a href="#" class="nav-item" data-target="ly_profile_edit" data-account="ly"><span class="ico">👤</span><span>📝 更新個人檔案</span></a>
+    <a href="#" class="nav-item" data-target="notes" data-account="ly"><span class="ico">📒</span><span>我的記事本</span></a>
     <a href="#" class="nav-item" data-target="content" data-account="shared"><span class="ico">⚙️</span><span>內容管理中心</span></a>
 
     <div class="nav-group-label" data-account="bf">— 男友 Austin · Non-JUPAS —</div>
@@ -77,6 +78,7 @@
     <a href="#" class="nav-item" data-target="bf_career" data-account="bf"><span class="ico">🎯</span><span>職業規劃｜求職｜行業</span></a>
     <a href="#" class="nav-item" data-target="bf_media" data-account="bf"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書</span></a>
     <a href="#" class="nav-item" data-target="bf_profile_edit" data-account="bf"><span class="ico">👤</span><span>更新個人檔案</span></a>
+    <a href="#" class="nav-item" data-target="bf_notes" data-account="bf"><span class="ico">📒</span><span>男友記事本</span></a>
     <div class="nav-group-label">— 共用 —</div>
     <a href="#" class="nav-item" data-target="diary" data-account="shared"><span class="ico">📔</span><span>我們的共同日記</span></a>
   </nav>
@@ -86,7 +88,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.11</div>
+    <div class="ver-tag" id="verTag">v2.3.12</div>
   </div>
 </aside>
 
@@ -1226,6 +1228,30 @@
     </div>
   </section>
 
+  <!-- ===== LY 記事本 ===== -->
+  <section class="page" data-account="ly" id="page-notes">
+    <div class="card">
+      <div class="card-title">📒 我的記事本 <span class="src" id="notesCountLy"></span></div>
+      <div class="notes-app">
+        <div class="notes-side">
+          <div class="form-row">
+            <button class="primary" id="notesNewLy">➕ 新筆記</button>
+            <input id="notesSearchLy" class="notes-search" placeholder="🔍 搜尋筆記…" />
+          </div>
+          <div id="notesListLy" class="notes-list"></div>
+        </div>
+        <div class="notes-main">
+          <input id="notesTitleLy" class="notes-title" placeholder="標題（可留空）" />
+          <textarea id="notesBodyLy" class="notes-body" placeholder="寫點嘢…（自動儲存）"></textarea>
+          <div class="form-row">
+            <span id="notesMetaLy" class="src"></span>
+            <button class="ghost" id="notesDelLy">🗑 刪除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== 模塊 9.5：校園資訊 & 聯繫人（LY） ===== -->
   <section class="page" data-account="ly" id="page-info">
     <div class="card">
@@ -1783,6 +1809,30 @@
       <div class="form-row">
         <button class="primary" id="bfPfSaveBtn">💾 儲存檔案</button>
         <span class="src" style="margin:0">儲存後男友總覽會即時更新（bf_profile）。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BF 記事本 ===== -->
+  <section class="page" data-account="bf" id="page-bf_notes">
+    <div class="card">
+      <div class="card-title">📒 男友記事本（Austin）<span class="src" id="notesCountBf"></span></div>
+      <div class="notes-app">
+        <div class="notes-side">
+          <div class="form-row">
+            <button class="primary" id="notesNewBf">➕ 新筆記</button>
+            <input id="notesSearchBf" class="notes-search" placeholder="🔍 搜尋筆記…" />
+          </div>
+          <div id="notesListBf" class="notes-list"></div>
+        </div>
+        <div class="notes-main">
+          <input id="notesTitleBf" class="notes-title" placeholder="標題（可留空）" />
+          <textarea id="notesBodyBf" class="notes-body" placeholder="寫點嘢…（自動儲存）"></textarea>
+          <div class="form-row">
+            <span id="notesMetaBf" class="src"></span>
+            <button class="ghost" id="notesDelBf">🗑 刪除</button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
