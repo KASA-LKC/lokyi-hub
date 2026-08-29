@@ -86,7 +86,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.9</div>
+    <div class="ver-tag" id="verTag">v2.3.10</div>
   </div>
 </aside>
 
@@ -1347,6 +1347,7 @@
       <p style="font-size:13px;color:#4b5563;margin-top:-6px">
         連接你嘅 PolyU 學校 Outlook（<b>connect.polyu.hk</b>），Dashboard 會自動讀取<b>行事曆</b>（改堂 / 考試 / 活動）同<b>郵件</b>中嘅重要資訊
         （assignment / test / exam / exchange / club / lecture notes / exercise / 改堂 / 課室更改），幫你更新行程表與 DDL 清單，並進入現有提醒系統。
+        <br><b>若學校未批 Entra App</b>：直接用底下「📥 手動匯入」卡，匯出 .ics 或貼上郵件文字就得，唔使經 admin。
       </p>
       <div class="form-row">
         <input id="outlookClientId" placeholder="Entra ID 應用程式 (client) ID" style="flex:2;min-width:240px" />
@@ -1362,6 +1363,25 @@
         <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="outlookAutoRemind" checked /> 到期前通知</label>
       </div>
       <div class="src" style="margin-top:6px">⚠️ 若連接時彈「需要管理員批准」，代表 PolyU 禁止學生 App 讀取郵件／行事曆，請向 ITS 申請 admin consent，或改用只開 <b>Calendars.Read</b>（通常較易批）。首次連接會彈出 Microsoft 登入視窗，請用學校帳號登入。</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📥 手動匯入（學校未批 Entra App 時用）</div>
+      <p style="font-size:13px;color:#4b5563;margin-top:-6px">
+        唔使經 PolyU admin。你喺 Outlook 匯出 <b>.ics</b> 行事曆檔、或者複製重要 <b>郵件文字</b>落嚟，喺呢度匯入，Dashboard 會自動解析並更新行程表 / DDL。
+      </p>
+      <div class="form-row" style="margin-top:6px">
+        <input type="file" id="icsFile" accept=".ics,text/calendar" style="flex:2;min-width:220px" />
+        <button class="primary" id="icsImportBtn">📥 匯入行事曆 (.ics)</button>
+      </div>
+      <div id="icsStatus" class="src" style="margin-top:6px">未匯入。從 Outlook 匯出 .ics 後撳上面掣。</div>
+      <div class="form-row" style="margin-top:10px">
+        <textarea id="mailPaste" placeholder="將 Outlook 重要郵件內容貼埋呢度（可一次過貼幾封，用空白行分隔）。Dashboard 會按關鍵字自動分類並加入待辦 / DDL。" style="flex:1;min-width:240px;height:88px;resize:vertical"></textarea>
+      </div>
+      <div class="form-row" style="margin-top:6px">
+        <button class="primary" id="mailParseBtn">🔍 解析郵件內容</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="mailAutoTodo" checked /> 自動加入待辦 / DDL</label>
+      </div>
+      <div id="mailStatus" class="src" style="margin-top:6px">未解析。</div>
     </div>
     <div class="grid-2">
       <div class="card">

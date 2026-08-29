@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.9', (d.getElementById('verTag') || {}).textContent === 'v2.3.9', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.10', (d.getElementById('verTag') || {}).textContent === 'v2.3.10', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
@@ -77,6 +77,10 @@ setTimeout(() => {
   chk('outlookConnectBtn 已綁定 onclick', !!(d.getElementById('outlookConnectBtn') && d.getElementById('outlookConnectBtn').onclick));
   chk('outlookSyncCalBtn 已綁定 onclick', !!(d.getElementById('outlookSyncCalBtn') && d.getElementById('outlookSyncCalBtn').onclick));
   chk('outlookSyncMailBtn 已綁定 onclick', !!(d.getElementById('outlookSyncMailBtn') && d.getElementById('outlookSyncMailBtn').onclick));
+  chk('icsFile input 存在', !!d.getElementById('icsFile'));
+  chk('mailPaste textarea 存在', !!d.getElementById('mailPaste'));
+  chk('icsImportBtn 已綁定 onclick', !!(d.getElementById('icsImportBtn') && d.getElementById('icsImportBtn').onclick));
+  chk('mailParseBtn 已綁定 onclick', !!(d.getElementById('mailParseBtn') && d.getElementById('mailParseBtn').onclick));
 
   let fail = 0;
   checks.forEach(c => {

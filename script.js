@@ -1298,6 +1298,92 @@ function renderOutlook() {
     return '<div class="alert-item"><span>' + (m.emo || '✉️') + ' ' + esc(m.subject) + ' <small>[' + esc(m.cat) + ']</small></span><span class="days">' + esc(m.due || m.received) + '</span></div>';
   }).join('') : '<div class="alert-item"><span>暫無郵件資訊（或尚未同步）。</span></div>';
 }
+
+/* 手動匯入：解析 .ics 行事曆檔 */
+function parseICS(text) {
+  text = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  text = text.replace(/\n[ \t]/g, ''); /* 合併摺行 */
+  var events = [];
+  var re = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g, m;
+  while ((m = re.exec(text))) {
+    var blk = m[1];
+    function g(field) { var mm = blk.match(new RegExp('(?:^|\\n)' + field + '(?:;[^\\n]*)?:([^\\n]*)', 'i')); return mm ? mm[1].trim() : ''; }
+    var subj = g('SUMMARY') || g('DESCRIPTION');
+    if (!subj) continue;
+    var dt = g('DTSTART');
+    var date = '', time = '';
+    if (dt) {
+      var dm = dt.match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
+      if (dm) { date = dm[1] + '-' + dm[2] + '-' + dm[3]; if (dm[4] !== undefined) time = dm[4] + ':' + dm[5]; }
+    }
+    var loc = g('LOCATION');
+    var desc = g('DESCRIPTION');
+    var rule = classifyOutlook(subj + ' ' + desc);
+    events.push({ subject: subj, date: date, time: time, loc: loc, cat: rule ? rule.cat : '', emo: rule ? rule.emo : '📅' });
+  }
+  return events;
+}
+function importICS() {
+  var inp = $id('icsFile');
+  if (!inp || !inp.files || !inp.files.length) { if ($id('icsStatus')) $id('icsStatus').textContent = '⚠️ 先揀一個 .ics 檔。'; return; }
+  if ($id('icsStatus')) $id('icsStatus').textContent = '⏳ 讀取中…';
+  var f = inp.files[0], rd = new FileReader();
+  rd.onload = function () {
+    try {
+      var evs = parseICS(rd.result);
+      if (!evs.length) { if ($id('icsStatus')) $id('icsStatus').textContent = '❌ 搵唔到 VEVENT，確認係 .ics 檔。'; return; }
+      var exist = {}; outlookCal.forEach(function (e) { exist[e.subject + '|' + e.date] = 1; });
+      var added = 0;
+      evs.forEach(function (e) { if (!exist[e.subject + '|' + e.date]) { outlookCal.push(e); exist[e.subject + '|' + e.date] = 1; added++; } });
+      var autoTodo = !$id('outlookAutoTodo') || $id('outlookAutoTodo').checked !== false;
+      if (autoTodo) {
+        var todos = LS.get('todos', []), ex2 = {}; todos.forEach(function (t) { ex2[t.t + '|' + t.due] = 1; });
+        var ta = 0;
+        evs.forEach(function (ev) {
+          if (ev.cat && /考試|測驗|Exam|Test/i.test(ev.cat) && ev.date) {
+            var title = (ev.emo || '') + ' ' + ev.subject + (ev.loc ? ' @ ' + ev.loc : '');
+            if (!ex2[title + '|' + ev.date]) { todos.push({ t: title, cat: 'Outlook', due: ev.date, done: false }); ex2[title + '|' + ev.date] = 1; ta++; }
+          }
+        });
+        if (ta) { LS.set('todos', todos); renderTodos(); renderDashboard(); renderNotifs(); }
+      }
+      LS.set('outlookCal', outlookCal);
+      LS.set('outlookLastSync', new Date().toISOString());
+      if ($id('icsStatus')) $id('icsStatus').textContent = '✅ 已匯入 ' + evs.length + ' 項行事曆（新增 ' + added + '）。' + (autoTodo ? ' 考試/測驗已加入 DDL。' : '');
+      renderOutlook();
+    } catch (e) { if ($id('icsStatus')) $id('icsStatus').textContent = '❌ 解析失敗 — ' + esc((e && e.message) || e); }
+  };
+  rd.readAsText(f);
+}
+function parsePastedMail() {
+  var ta = $id('mailPaste');
+  if (!ta || !ta.value.trim()) { if ($id('mailStatus')) $id('mailStatus').textContent = '⚠️ 先貼啲郵件內容。'; return; }
+  if ($id('mailStatus')) $id('mailStatus').textContent = '⏳ 解析中…';
+  try {
+    var chunks = ta.value.split(/\n{2,}/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var autoTodo = !$id('mailAutoTodo') || $id('mailAutoTodo').checked !== false;
+    var todos = LS.get('todos', []), ex2 = {}; todos.forEach(function (t) { ex2[t.t + '|' + t.due] = 1; });
+    var added = 0, found = 0;
+    chunks.forEach(function (c) {
+      var rule = classifyOutlook(c);
+      if (!rule) return; found++;
+      var due = extractDate(c) || '';
+      var subject = (c.split('\n')[0] || c).slice(0, 80);
+      outlookMail.unshift({ subject: subject, cat: rule.cat, emo: rule.emo, due: due, received: '' });
+      if (autoTodo) {
+        var title = rule.emo + ' ' + subject;
+        if (!ex2[title + '|' + due]) { todos.push({ t: title, cat: 'Outlook', due: due, done: false }); ex2[title + '|' + due] = 1; added++; }
+      }
+    });
+    if (autoTodo && added) { LS.set('todos', todos); renderTodos(); renderDashboard(); renderNotifs(); }
+    outlookMail = outlookMail.slice(0, 60);
+    LS.set('outlookMail', outlookMail);
+    LS.set('outlookLastSync', new Date().toISOString());
+    if ($id('mailStatus')) $id('mailStatus').textContent = found ? ('✅ 搵到 ' + found + ' 封重要郵件' + (autoTodo ? '，已加入 ' + added + ' 項待辦。' : '。')) : 'ℹ️ 無關鍵字，未加入。';
+    renderOutlook();
+  } catch (e) { if ($id('mailStatus')) $id('mailStatus').textContent = '❌ 解析失敗 — ' + esc((e && e.message) || e); }
+}
+
 function initOutlook() {
   if ($id('outlookClientId')) $id('outlookClientId').value = LS.get('outlookClientId', '');
   if ($id('outlookTenant')) $id('outlookTenant').value = LS.get('outlookTenant', '');
@@ -1314,6 +1400,8 @@ function initOutlook() {
   };
   if ($id('outlookSyncCalBtn')) $id('outlookSyncCalBtn').onclick = outlookSyncCalendar;
   if ($id('outlookSyncMailBtn')) $id('outlookSyncMailBtn').onclick = outlookSyncMail;
+  if ($id('icsImportBtn')) $id('icsImportBtn').onclick = importICS;
+  if ($id('mailParseBtn')) $id('mailParseBtn').onclick = parsePastedMail;
   outlookCal = LS.get('outlookCal', []); outlookMail = LS.get('outlookMail', []);
   renderOutlook();
 }
