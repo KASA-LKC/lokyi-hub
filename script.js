@@ -50,6 +50,7 @@ function changeLabel(key) {
     todos: '待辦事項', timetable: '課表', funds: '資助申請', jobs: '求職追蹤',
     wie: 'WIE 實習', exchk: '交換材料', diary_anniv: '紀念日', regs: '學分進度',
     announcement: '公告', fix_dl: '學校日程', fix_dday: 'D-Day',
+    advisorInfo: 'Academic Advisor', loginInfo: '登入資訊',
     bf_announcement: '公告（Austin）', bf_fix_dl: '學校日程（Austin）', bf_fix_dday: 'D-Day（Austin）',
     theme: '主題',
     media_name_ly: '自媒體名稱', media_name_bf: '自媒體名稱'
@@ -872,6 +873,166 @@ function initTodos() {
   };
   /* 🆕 v2.3.1 智慧生成待辦 */
   if ($id('autoTdBtn')) $id('autoTdBtn').onclick = renderAutoTd;
+}
+
+/* ============================================================
+   模塊 9.5：校園資訊 & 聯繫人（LY：info）
+   ============================================================ */
+function renderInfo() {
+  if (!$id('page-info')) return;
+  var adv = LS.get('advisorInfo', { name: '', email: '' });
+  if ($id('infoAdvisorName')) $id('infoAdvisorName').textContent = adv.email ? (adv.name || '（已儲存）') : '（由 SHTM 指派，見 Canvas / SHTM 通告）';
+  if ($id('infoAdvEmailCell')) $id('infoAdvEmailCell').innerHTML = adv.email ? '<a href="mailto:' + esc(adv.email) + '">' + esc(adv.email) + '</a>' : '—';
+  if ($id('advisorEmailInput')) $id('advisorEmailInput').value = adv.email || '';
+  var li = LS.get('loginInfo', { ghUser: 'KASA-LKC', ghEmail: 'cle061103@gmail.com', canvasLogin: '26017276d', pwd: '' });
+  if ($id('lgGhUser')) $id('lgGhUser').value = li.ghUser || '';
+  if ($id('lgGhEmail')) $id('lgGhEmail').value = li.ghEmail || '';
+  if ($id('lgCanvasLogin')) $id('lgCanvasLogin').value = li.canvasLogin || '';
+  if ($id('lgPwd')) $id('lgPwd').value = li.pwd || '';
+}
+function initInfo() {
+  if ($id('saveAdvisorBtn')) $id('saveAdvisorBtn').onclick = function () {
+    var email = ($id('advisorEmailInput') ? $id('advisorEmailInput').value : '').trim();
+    var name = (prompt('Academic Advisor 姓名（可留空）：', '') || '').trim();
+    if (email) LS.set('advisorInfo', { name: name, email: email });
+    renderInfo(); toast('Academic Advisor 已儲存 ✓');
+  };
+  if ($id('lgSave')) $id('lgSave').onclick = function () {
+    LS.set('loginInfo', {
+      ghUser: ($id('lgGhUser') ? $id('lgGhUser').value : '').trim() || 'KASA-LKC',
+      ghEmail: ($id('lgGhEmail') ? $id('lgGhEmail').value : '').trim() || 'cle061103@gmail.com',
+      canvasLogin: ($id('lgCanvasLogin') ? $id('lgCanvasLogin').value : '').trim() || '26017276d',
+      pwd: $id('lgPwd') ? $id('lgPwd').value : ''
+    });
+    renderInfo(); toast('登入資訊已儲存 ✓（只存本機）');
+  };
+  if ($id('lgTogglePwd')) $id('lgTogglePwd').onclick = function () {
+    var p = $id('lgPwd'); if (!p) return;
+    p.type = p.type === 'password' ? 'text' : 'password';
+  };
+}
+
+/* ============================================================
+   模塊 9.6：Canvas 同步提醒（LY：canvas）
+   Token 只存本機 localStorage（lyhub_canvasToken），唔會上傳。
+   ============================================================ */
+var CANVAS_BASE = 'https://canvas.polyu.edu.hk/api/v1';
+var canvasCourses = [];
+var canvasAssignments = [];
+
+function canvasFetch(path, token) {
+  return fetch(CANVAS_BASE + path, { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function (res) { if (!res.ok) throw new Error('Canvas API ' + res.status); return res.json(); });
+}
+function canvasDueDate(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Asia/Hong_Kong' }); } catch (e) { return ''; }
+}
+function syncCanvas(showTip) {
+  var token = LS.get('canvasToken', '');
+  if (!token) { if (showTip) toast('請先儲存 Canvas API Token'); return; }
+  var st = $id('canvasStatus');
+  if (st) st.innerHTML = '狀態：⏳ 正在同步 Canvas…';
+  canvasFetch('/courses?enrollment_state=active&enrollment_type=student&per_page=100', token).then(function (courses) {
+    canvasCourses = courses.filter(function (c) { return c.id; }).map(function (c) {
+      return { id: c.id, name: c.name || 'Unnamed', code: c.course_code || '' };
+    });
+    var assigns = [];
+    var chain = Promise.resolve();
+    canvasCourses.forEach(function (c) {
+      chain = chain.then(function () {
+        return canvasFetch('/courses/' + c.id + '/assignments?bucket=upcoming&per_page=50', token)
+          .then(function (as) {
+            as.forEach(function (a) { assigns.push({ id: a.id, course: c.name, courseCode: c.code, name: a.name || '', due: a.due_at || '' }); });
+          })
+          .catch(function () { /* 單一課程失敗不阻礙整體 */ });
+      });
+    });
+    return chain.then(function () {
+      canvasAssignments = assigns.sort(function (a, b) { return (a.due || '').localeCompare(b.due || ''); });
+      renderCanvas();
+      scheduleCanvasReminders();
+      if (st) st.innerHTML = '狀態：✅ 已同步（' + canvasCourses.length + ' 個課程 · ' + canvasAssignments.length + ' 項作業）。更新時間 ' + new Date().toLocaleTimeString('zh-HK', { timeZone: 'Asia/Hong_Kong' });
+      if (showTip) toast('Canvas 同步完成 ✓ ' + canvasCourses.length + ' 課程 / ' + canvasAssignments.length + ' 作業');
+    });
+  }).catch(function (e) {
+    if (st) st.innerHTML = '狀態：❌ 同步失敗 — ' + esc(e.message) + '。請確認 Token 正確、網絡正常。';
+    if (showTip) toast('Canvas 同步失敗：' + e.message);
+  });
+}
+function renderCanvas() {
+  var coursesBox = $id('canvasCourses');
+  if (coursesBox) coursesBox.innerHTML = canvasCourses.length
+    ? canvasCourses.map(function (c) { return '<div class="alert-item"><span>📘 ' + esc(c.name) + '</span><span class="days">' + esc(c.code || '') + '</span></div>'; }).join('')
+    : '<div class="alert-item"><span>暫無課程資料。</span></div>';
+  var asgBox = $id('canvasAssignments');
+  if (asgBox) {
+    var today = todayStr();
+    var upcoming = canvasAssignments.filter(function (a) { return a.due && canvasDueDate(a.due) >= today; });
+    asgBox.innerHTML = upcoming.length ? upcoming.slice(0, 20).map(function (a) {
+      var n = daysUntil(canvasDueDate(a.due));
+      var cls = (n >= 0 && n <= 2) ? 'red' : (n >= 0 && n <= 7) ? 'warn' : '';
+      var lbl = n < 0 ? '已過' : n === 0 ? '今天' : n + ' 天';
+      return '<div class="alert-item ' + cls + '"><span>📝 ' + esc(a.name) + '<br><small>' + esc(a.course) + ' · 截止 ' + esc(canvasDueDate(a.due)) + '</small></span><span class="days">' + lbl + '</span></div>';
+    }).join('') : '<div class="alert-item" style="border-left-color:#10b981;background:#ecfdf5"><span>✅ 未有即將到期嘅作業。</span></div>';
+  }
+}
+function scheduleCanvasReminders() {
+  var token = LS.get('canvasToken', '');
+  if (!token) return;
+  var today = todayStr();
+  var d2 = new Date(); d2.setDate(d2.getDate() + 2);
+  var limit = d2.getFullYear() + '-' + ('0' + (d2.getMonth() + 1)).slice(-2) + '-' + ('0' + d2.getDate()).slice(-2);
+  var autoRemind = $id('canvasAutoRemind');
+  var autoTodo = $id('canvasAutoTodo');
+  var dueSoon = canvasAssignments.filter(function (a) { return a.due && canvasDueDate(a.due) >= today && canvasDueDate(a.due) <= limit; });
+  if (dueSoon.length) {
+    var notified = LS.get('canvasNotified', []);
+    var seen = {}; notified.forEach(function (k) { seen[k] = 1; });
+    dueSoon.forEach(function (a) {
+      var key = a.id + '|' + canvasDueDate(a.due);
+      if (seen[key]) return;
+      seen[key] = 1; notified.push(key);
+      if ((!autoRemind || autoRemind.checked !== false) && 'Notification' in window && Notification.permission === 'granted') {
+        try { new Notification('⏰ Canvas 到期提醒', { body: a.name + '（' + a.course + '）· 截止 ' + canvasDueDate(a.due), icon: 'icons/icon-192.png', tag: key }); } catch (e) {}
+      }
+    });
+    LS.set('canvasNotified', notified.slice(-300));
+  }
+  if (!autoTodo || autoTodo.checked !== false) {
+    var todos = LS.get('todos', []);
+    var exist = {}; todos.forEach(function (t) { exist[t.t + '|' + t.due] = 1; });
+    var added = 0;
+    dueSoon.forEach(function (a) {
+      var title = a.name + '（' + a.course + '）';
+      var due = canvasDueDate(a.due);
+      if (due && !exist[title + '|' + due]) { todos.push({ t: title, cat: 'Canvas', due: due, done: false }); exist[title + '|' + due] = 1; added++; }
+    });
+    if (added) { LS.set('todos', todos); renderTodos(); renderDashboard(); renderNotifs(); }
+  }
+}
+function initCanvas() {
+  if ($id('saveCanvasBtn')) $id('saveCanvasBtn').onclick = function () {
+    var token = ($id('canvasToken') ? $id('canvasToken').value : '').trim();
+    if (!token) { toast('請貼上 Canvas API Token'); return; }
+    LS.set('canvasToken', token);
+    syncCanvas(true);
+  };
+  if ($id('syncCanvasBtn')) $id('syncCanvasBtn').onclick = function () { syncCanvas(true); };
+  if ($id('clearCanvasBtn')) $id('clearCanvasBtn').onclick = function () {
+    if (!confirm('確定清除 Canvas Token？')) return;
+    LS.set('canvasToken', '');
+    canvasCourses = []; canvasAssignments = [];
+    if ($id('canvasToken')) $id('canvasToken').value = '';
+    var st = $id('canvasStatus'); if (st) st.innerHTML = '狀態：已清除 Token。';
+    renderCanvas();
+  };
+  /* 已有 token → 顯示狀態並自動同步一次 */
+  if (LS.get('canvasToken', '')) {
+    var st = $id('canvasStatus');
+    if (st) st.innerHTML = '狀態：已儲存 Token。按「🔄 立即同步」更新課程與作業。';
+    setTimeout(function () { syncCanvas(false); }, 1500);
+  }
 }
 
 /* ============================================================
@@ -3434,8 +3595,8 @@ function initGlobal() {
    ============================================================ */
 function renderAll() {
   renderDashboard(); renderReg(); renderWie(); renderExchange(); renderFunding();
-  renderResume(); renderJobs(); renderTodos(); renderLibrary(); renderIp(); renderStudy();
-  renderLyProfile();
+  renderResume(); renderJobs(); renderTodos(); renderInfo(); renderCanvas();
+  renderLibrary(); renderIp(); renderStudy(); renderLyProfile();
   renderBfDash(); renderBfSubjects(); renderBfPrograms(); renderBfMaterials();
   renderBfCv(); renderBfTimeline(); renderBfCareer(); renderBfProfile();
   renderNotifs();
@@ -3469,7 +3630,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   initReg(); initWie(); initExchange(); initFunding(); initResume(); initJobs();
-  initTodos(); initLibrary(); initIp(); initStudy(); initLyProfile();
+  initTodos(); initInfo(); initCanvas(); initLibrary(); initIp(); initStudy(); initLyProfile();
   initBfDash(); initBfSubjects(); initBfPrograms(); initBfMaterials();
   initBfCv(); initBfTimeline(); initBfCareer(); initBfProfile();
   initNotifUI(); initLoki(); initGlobal();

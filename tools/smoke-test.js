@@ -1,0 +1,85 @@
+/* 冒煙測試：用 jsdom 載入 index.html，執行 script.js，捕獲執行時錯誤 */
+const fs = require('fs');
+const path = require('path');
+const { JSDOM, VirtualConsole } = require('jsdom');
+
+const dir = path.join(__dirname, '..');
+const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+const js = fs.readFileSync(path.join(dir, 'script.js'), 'utf8');
+
+const errors = [];
+const warns = [];
+const vc = new VirtualConsole();
+vc.on('jsdomError', e => errors.push('jsdomError: ' + (e.message || e)));
+vc.on('error', (...a) => errors.push('console.error: ' + a.join(' ')));
+vc.on('warn', (...a) => warns.push('console.warn: ' + a.join(' ')));
+
+const dom = new JSDOM(html, {
+  runScripts: 'dangerously',
+  pretendToBeVisual: true,
+  url: 'http://localhost/',
+  virtualConsole: vc,
+  resources: undefined,
+  beforeParse(window) {
+    // Canvas / 網絡相關 stub
+    window.fetch = () => Promise.reject(new Error('offline-stub'));
+    window.scrollTo = () => {};
+    window.scroll = () => {};
+    window.Element.prototype.scrollIntoView = window.Element.prototype.scrollIntoView || (() => {});
+    window.matchMedia = window.matchMedia || (q => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }));
+    window.Notification = { permission: 'default', requestPermission: () => Promise.resolve('default') };
+    if (!window.HTMLCanvasElement.prototype.getContext) {
+      window.HTMLCanvasElement.prototype.getContext = () => null;
+    }
+  }
+});
+
+const w = dom.window;
+// 注入 script.js（繞過外部 script 載入）
+try {
+  const s = w.document.createElement('script');
+  s.textContent = js;
+  w.document.body.appendChild(s);
+} catch (e) {
+  errors.push('inject: ' + e.message);
+}
+
+// 觸發 DOMContentLoaded 已在 jsdom 內自動完成；這裡等待微任務
+setTimeout(() => {
+  const d = w.document;
+  const checks = [];
+  function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
+
+  chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
+  chk('版本標籤 v2.3.7', (d.getElementById('verTag') || {}).textContent === 'v2.3.7', (d.getElementById('verTag') || {}).textContent);
+  chk('page-info 存在', !!d.getElementById('page-info'));
+  chk('page-canvas 存在', !!d.getElementById('page-canvas'));
+  chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
+  chk('canvasToken input 存在', !!d.getElementById('canvasToken'));
+  chk('saveCanvasBtn 已綁定 onclick', !!(d.getElementById('saveCanvasBtn') || {}).onclick);
+  chk('syncCanvasBtn 已綁定 onclick', !!(d.getElementById('syncCanvasBtn') || {}).onclick);
+  chk('clearCanvasBtn 已綁定 onclick', !!(d.getElementById('clearCanvasBtn') || {}).onclick);
+  chk('saveAdvisorBtn 已綁定 onclick', !!(d.getElementById('saveAdvisorBtn') || {}).onclick);
+  chk('lgSave 已綁定 onclick', !!(d.getElementById('lgSave') || {}).onclick);
+  chk('lgTogglePwd 已綁定 onclick', !!(d.getElementById('lgTogglePwd') || {}).onclick);
+
+  // 所有 target=_blank 必須有 rel=noopener
+  const blanks = [...d.querySelectorAll('a[target="_blank"]')];
+  const bad = blanks.filter(a => !(a.getAttribute('rel') || '').includes('noopener'));
+  chk('全部 target=_blank 含 rel=noopener (' + blanks.length + ' 個)', bad.length === 0, bad.map(a => a.getAttribute('href')).join(', '));
+
+  // Canvas 渲染（未連接狀態）
+  chk('canvasCourses 有初始內容', (d.getElementById('canvasCourses') || { innerHTML: '' }).innerHTML.length > 0);
+
+  // 導航數目
+  chk('導航項 30 個', d.querySelectorAll('.nav-item').length === 30, String(d.querySelectorAll('.nav-item').length));
+
+  let fail = 0;
+  checks.forEach(c => {
+    if (!c.ok) fail++;
+    console.log((c.ok ? '  PASS  ' : '  FAIL  ') + c.name + (c.extra && !c.ok ? '  ->  ' + c.extra : ''));
+  });
+  console.log('\n結果：' + (checks.length - fail) + '/' + checks.length + ' 通過');
+  if (warns.length) console.log('\n警告（' + warns.length + '）：\n' + warns.slice(0, 8).join('\n'));
+  process.exit(fail ? 1 : 0);
+}, 800);

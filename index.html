@@ -56,6 +56,8 @@
     <a href="#" class="nav-item" data-target="career" data-account="ly"><span class="ico">🎯</span><span>職業生涯規劃</span></a>
     <a href="#" class="nav-item" data-target="study" data-account="ly"><span class="ico">🎓</span><span>學習進度追蹤</span></a>
     <a href="#" class="nav-item" data-target="todos" data-account="ly"><span class="ico">✅</span><span>待辦 & 提醒</span></a>
+    <a href="#" class="nav-item" data-target="info" data-account="ly"><span class="ico">🏫</span><span>校園資訊 & 聯繫人</span></a>
+    <a href="#" class="nav-item" data-target="canvas" data-account="ly"><span class="ico">🎨</span><span>Canvas 同步提醒</span></a>
     <a href="#" class="nav-item" data-target="library" data-account="ly"><span class="ico">📎</span><span>資源筆記庫</span></a>
     <a href="#" class="nav-item" data-target="ip" data-account="ly"><span class="ico">🎥</span><span>我的社交IP</span></a>
     <a href="#" class="nav-item" data-target="media" data-account="ly"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書+抖音</span></a>
@@ -70,6 +72,7 @@
     <a href="#" class="nav-item" data-target="bf_cv_suggestions" data-account="bf"><span class="ico">📝</span><span>CV 實時改善建議</span></a>
     <a href="#" class="nav-item" data-target="bf_timeline" data-account="bf"><span class="ico">⏰</span><span>申請時間節點倒計時</span></a>
     <a href="#" class="nav-item" data-target="bf_guide" data-account="bf"><span class="ico">📘</span><span>報名操作說明書</span></a>
+    <a href="#" class="nav-item" data-target="bf_info" data-account="bf"><span class="ico">🏫</span><span>HKCC 資訊 & 聯繫人</span></a>
     <a href="#" class="nav-item" data-target="bf_career" data-account="bf"><span class="ico">🎯</span><span>職業規劃｜求職｜行業</span></a>
     <a href="#" class="nav-item" data-target="bf_media" data-account="bf"><span class="ico">📣</span><span>自媒體運營 ｜ 小紅書</span></a>
     <a href="#" class="nav-item" data-target="bf_profile_edit" data-account="bf"><span class="ico">👤</span><span>更新個人檔案</span></a>
@@ -82,7 +85,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.6</div>
+    <div class="ver-tag" id="verTag">v2.3.7</div>
   </div>
 </aside>
 
@@ -135,7 +138,12 @@
           <span class="tag">🎓 升學：CUHK 新媒體碩士</span>
         </div>
         <div class="quick-grid">
+          <a class="qk" href="https://canvas.polyu.edu.hk/" target="_blank" rel="noopener">🖥️ Canvas</a>
           <a class="qk" href="https://www.polyu.edu.hk/student" target="_blank" rel="noopener">🎓 eStudent</a>
+          <a class="qk" href="https://my.polyu.edu.hk/" target="_blank" rel="noopener">🏛️ myPolyU</a>
+          <a class="qk" href="https://www.lib.polyu.edu.hk/" target="_blank" rel="noopener">📚 圖書館</a>
+          <a class="qk" href="https://www.polyu.edu.hk/ar/students-in-taught-programmes/annual-schedules/timetable-exam-assessment/" target="_blank" rel="noopener">🗓️ 時間表</a>
+          <a class="qk" href="https://www.polyu.edu.hk/its/" target="_blank" rel="noopener">🛠️ ITS</a>
           <a class="qk" href="https://www.polyu.edu.hk/sao" target="_blank" rel="noopener">🏛️ SAO</a>
           <a class="qk" href="https://www.polyu.edu.hk/shtm" target="_blank" rel="noopener">🏨 SHTM</a>
           <a class="qk" href="https://www.polyu.edu.hk/wie" target="_blank" rel="noopener">💼 WIE</a>
@@ -194,7 +202,7 @@
         <div class="kv"><span>目標 GPA</span><b id="dashTargetGpa">—</b></div>
         <div class="kv"><span>備註</span><b id="dashNote" style="text-align:right">—</b></div>
         <div class="kv"><span>學校 Email</span><b><a href="mailto:26017276d@connect.polyu.hk">26017276d@connect.polyu.hk</a></b></div>
-        <div class="kv"><span>個人 Outlook</span><b><a href="https://outlook.office.com/owa/?realm=connect.polyu.hk" target="_blank">登入</a></b></div>
+        <div class="kv"><span>個人 Outlook</span><b><a href="https://outlook.office.com/owa/?realm=connect.polyu.hk" target="_blank" rel="noopener">登入</a></b></div>
         <div class="kv"><span>2026/27 Sem 1 開學</span><b>2026/8/31</b></div>
         <div class="kv"><span>WIE 要求</span><b id="wieReqText">100 小時</b></div>
         <div class="kv"><span>WIE 已完成</span><b id="wieDoneText">0 小時</b></div>
@@ -278,7 +286,7 @@
         <div class="metric"><div class="metric-l">畢業總學分目標</div><input type="number" id="crTarget" class="metric-i" value="120" /></div>
       </div>
       <div class="progress"><div class="bar" id="crBar"></div></div>
-      <div class="src">PolyU SHTM 一般需 120 學分畢業（HKCC 升讀可豁免部分）。最終以 <a href="https://www.polyu.edu.hk/student" target="_blank">eStudent</a> 學術報告為準。</div>
+      <div class="src">PolyU SHTM 一般需 120 學分畢業（HKCC 升讀可豁免部分）。最終以 <a href="https://www.polyu.edu.hk/student" target="_blank" rel="noopener">eStudent</a> 學術報告為準。</div>
     </div>
 
     <div class="card">
@@ -340,7 +348,7 @@
           </ol>
         </li>
         <li><b>查詢：</b><a href="mailto:ada.au@polyu.edu.hk">ada.au@polyu.edu.hk</a> · 3400-2201 ｜ <a href="mailto:shirleysn.ng@polyu.edu.hk">shirleysn.ng@polyu.edu.hk</a> · 3400-2157</li>
-        <li><a href="https://www.polyu.edu.hk/ar/students-in-taught-programmes/application-forms" target="_blank">📋 AR41C 申請表下載</a></li>
+        <li><a href="https://www.polyu.edu.hk/ar/students-in-taught-programmes/application-forms" target="_blank" rel="noopener">📋 AR41C 申請表下載</a></li>
       </ul>
     </div>
 
@@ -374,13 +382,13 @@
     <div class="card">
       <div class="card-title">🔎 實習職位來源（官方）</div>
       <ul class="link-list">
-        <li><a href="https://www.polyu.edu.hk/sao/careers-and-placement-section/" target="_blank">PolyU Career Services</a></li>
-        <li><a href="https://www.polyu.edu.hk/shtm" target="_blank">SHTM 行業夥伴職位</a></li>
-        <li><a href="https://hk.jobsdb.com" target="_blank">JobsDB 香港</a></li>
-        <li><a href="https://hk.linkedin.com" target="_blank">LinkedIn 香港</a></li>
-        <li><a href="https://www.ctgoodjobs.hk" target="_blank">CTgoodjobs 高盛網</a></li>
-        <li><a href="https://hk.indeed.com" target="_blank">Indeed 香港</a></li>
-        <li><a href="https://www.hospitalitynet.org" target="_blank">HospitalityNet 國際酒店業</a></li>
+        <li><a href="https://www.polyu.edu.hk/sao/" target="_blank" rel="noopener">PolyU Career Services</a></li>
+        <li><a href="https://www.polyu.edu.hk/shtm" target="_blank" rel="noopener">SHTM 行業夥伴職位</a></li>
+        <li><a href="https://hk.jobsdb.com" target="_blank" rel="noopener">JobsDB 香港</a></li>
+        <li><a href="https://hk.linkedin.com" target="_blank" rel="noopener">LinkedIn 香港</a></li>
+        <li><a href="https://www.ctgoodjobs.hk" target="_blank" rel="noopener">CTgoodjobs 高盛網</a></li>
+        <li><a href="https://hk.indeed.com" target="_blank" rel="noopener">Indeed 香港</a></li>
+        <li><a href="https://www.hospitalitynet.org" target="_blank" rel="noopener">HospitalityNet 國際酒店業</a></li>
       </ul>
     </div>
 
@@ -404,10 +412,10 @@
       <p style="font-size:13px;margin-bottom:10px">作為 Senior Year 學生，可於 Sem 2 進行交換。所得學分可轉回 PolyU 計入畢業要求（free electives 或 specific core subjects）。若 WIE 未完成，亦可在交流期間完成。</p>
       <p style="font-size:13px"><b>注意：</b>若 WIE 仍未開始，建議考慮 GEO 舉辦的 Summer Exchange Programme（詳情預計 2026 年 12 月公布）。</p>
       <ul class="link-list" style="margin-top:10px">
-        <li><a href="https://www.polyu.edu.hk/shtm/study-at-shtm/student-opportunities/student-exchange-programme/outbound-student-exchange/" target="_blank">SHTM — Outbound Exchange 官網</a></li>
-        <li><a href="https://www.polyu.edu.hk/geo/exchange-and-study-abroad/outgoing-students/semester-exchange/" target="_blank">GEO — Semester Exchange</a></li>
-        <li><a href="https://www.polyu.edu.hk/geo/exchange-and-study-abroad/outgoing-students/student-exchange-financial-support" target="_blank">💰 Exchange Financial Support</a></li>
-        <li><a href="https://hkpolyushtm.asia.qualtrics.com" target="_blank">📝 Qualtrics 申請入口</a></li>
+        <li><a href="https://www.polyu.edu.hk/shtm/experience-and-opportunities/student-exchange-programme/outbound-student-exchange/" target="_blank" rel="noopener">SHTM — Outbound Exchange 官網</a></li>
+        <li><a href="https://www.polyu.edu.hk/geo/exchange-and-study-abroad/outgoing-students/semester-exchange/" target="_blank" rel="noopener">GEO — Semester Exchange</a></li>
+        <li><a href="https://www.polyu.edu.hk/geo/exchange-and-study-abroad/outgoing-students/semester-exchange/" target="_blank" rel="noopener">💰 Exchange Financial Support</a></li>
+        <li><a href="https://hkpolyushtm.asia.qualtrics.com/jfe/form/SV_3PnWuSHQoeDlxpc" target="_blank" rel="noopener">📝 Qualtrics 申請入口</a></li>
       </ul>
     </div>
 
@@ -470,7 +478,7 @@
             <td class="red">25/9/2026</td>
             <td>Grant $52,450–$91,150<br/>Loan 上限 $58,200</td>
             <td>需入息審查</td>
-            <td><a href="https://www.polyu.edu.hk/sao/fa/tsfs" target="_blank">官網</a></td>
+            <td><a href="https://www.polyu.edu.hk/sao/fa/tsfs" target="_blank" rel="noopener">官網</a></td>
             <td><select class="status-sel" data-key="tsfs"><option>未開始</option><option>準備中</option><option>已遞交</option><option>已批核</option></select></td>
           </tr>
           <tr>
@@ -478,7 +486,7 @@
             <td class="red">25/9/2026</td>
             <td>行政費 $365<br/>利率 2.173% p.a. (Aug 2026)</td>
             <td>免入息審查</td>
-            <td><a href="https://www.polyu.edu.hk/sao/fa/nls" target="_blank">官網</a></td>
+            <td><a href="https://www.polyu.edu.hk/sao/fa/nls" target="_blank" rel="noopener">官網</a></td>
             <td><select class="status-sel" data-key="nlsft"><option>未開始</option><option>準備中</option><option>已遞交</option><option>已批核</option></select></td>
           </tr>
           <tr>
@@ -486,7 +494,7 @@
             <td>持續</td>
             <td>Grant $3,000–$10,000<br/>Loan $10,000–$20,000</td>
             <td>由捐贈 / 個人贊助</td>
-            <td><a href="https://www.polyu.edu.hk/sao/fa/pufa" target="_blank">官網</a></td>
+            <td><a href="https://www.polyu.edu.hk/sao/fa/pufa" target="_blank" rel="noopener">官網</a></td>
             <td><select class="status-sel" data-key="pufa"><option>未開始</option><option>準備中</option><option>已遞交</option><option>已批核</option></select></td>
           </tr>
           <tr>
@@ -494,7 +502,7 @@
             <td class="red">20/7/2026（已過）</td>
             <td>校友會獎學金</td>
             <td>學院推薦</td>
-            <td><a href="https://www.polyu.edu.hk/shtm" target="_blank">SHTM</a></td>
+            <td><a href="https://www.polyu.edu.hk/shtm" target="_blank" rel="noopener">SHTM</a></td>
             <td><select class="status-sel" data-key="shtmaa"><option>未開始</option><option>準備中</option><option>已遞交</option><option>已批核</option></select></td>
           </tr>
         </tbody>
@@ -507,7 +515,7 @@
       <table class="tbl">
         <thead><tr><th>場次</th><th>日期</th><th>時間</th><th>地點</th><th>登記</th></tr></thead>
         <tbody>
-          <tr><td>SS-SF-SAO-SSA-U1-A</td><td>25 Aug 2026 (Tue)</td><td>2:30 pm – 5 pm</td><td>PolyU Room TU101</td><td rowspan="3"><a href="https://www.polyu.edu.hk/sao/fa" target="_blank">POSS 系統</a></td></tr>
+          <tr><td>SS-SF-SAO-SSA-U1-A</td><td>25 Aug 2026 (Tue)</td><td>2:30 pm – 5 pm</td><td>PolyU Room TU101</td><td rowspan="3"><a href="https://www.polyu.edu.hk/sao/fa" target="_blank" rel="noopener">POSS 系統</a></td></tr>
           <tr><td>SS-SF-SAO-SSA-U1-B</td><td>28 Aug 2026 (Fri)</td><td>2:30 pm – 5 pm</td><td>PolyU Room GH201</td></tr>
           <tr><td>SS-SF-SAO-SSA-U1-C</td><td>2 Sep 2026 (Wed)</td><td>2:30 pm – 5 pm</td><td>PolyU Communal Building S509</td></tr>
         </tbody>
@@ -599,15 +607,15 @@
     <div class="card">
       <div class="card-title">🔎 聚合入口（官方）</div>
       <ul class="link-list">
-        <li><a href="https://www.polyu.edu.hk/sao/careers-and-placement-section/" target="_blank">PolyU Career Services</a></li>
-        <li><a href="https://www.polyu.edu.hk/sao/careers-and-placement-section/job-opportunities/polyu-job-board/" target="_blank">PolyU Job Board</a></li>
-        <li><a href="https://www.polyu.edu.hk/sao/careers-and-placement-section/job-opportunities/" target="_blank">Job Opportunities — 求職資源</a></li>
-        <li><a href="https://hk.linkedin.com" target="_blank">LinkedIn 香港</a></li>
-        <li><a href="https://hk.jobsdb.com" target="_blank">JobsDB 香港</a></li>
-        <li><a href="https://hk.indeed.com" target="_blank">Indeed 香港</a></li>
-        <li><a href="https://www.ctgoodjobs.hk" target="_blank">CTgoodjobs 高盛網</a></li>
-        <li><a href="https://www.hospitalitynet.org" target="_blank">HospitalityNet</a></li>
-        <li><a href="https://www.careerjet.com.hk" target="_blank">Careerjet 香港</a></li>
+        <li><a href="https://www.polyu.edu.hk/sao/" target="_blank" rel="noopener">PolyU Career Services</a></li>
+        <li><a href="https://www.polyu.edu.hk/sao/careers-and-placement-section/job-opportunities/polyu-job-board/" target="_blank" rel="noopener">PolyU Job Board</a></li>
+        <li><a href="https://www.polyu.edu.hk/sao/careers-and-placement-section/job-opportunities/" target="_blank" rel="noopener">Job Opportunities — 求職資源</a></li>
+        <li><a href="https://hk.linkedin.com" target="_blank" rel="noopener">LinkedIn 香港</a></li>
+        <li><a href="https://hk.jobsdb.com" target="_blank" rel="noopener">JobsDB 香港</a></li>
+        <li><a href="https://hk.indeed.com" target="_blank" rel="noopener">Indeed 香港</a></li>
+        <li><a href="https://www.ctgoodjobs.hk" target="_blank" rel="noopener">CTgoodjobs 高盛網</a></li>
+        <li><a href="https://www.hospitalitynet.org" target="_blank" rel="noopener">HospitalityNet</a></li>
+        <li><a href="https://www.careerjet.com.hk" target="_blank" rel="noopener">Careerjet 香港</a></li>
       </ul>
     </div>
 
@@ -685,17 +693,17 @@
           <tr>
             <td><b>CUHK MSc in New Media</b></td>
             <td>MSc in New Media（新媒體理學碩士）— 由新聞與傳播學院（School of Journalism and Communication）開設</td>
-            <td><a href="https://pg.com.cuhk.edu.hk/pgp_nm/" target="_blank">官網</a></td>
+            <td><a href="https://pg.com.cuhk.edu.hk/pgp_nm/" target="_blank" rel="noopener">官網</a></td>
           </tr>
           <tr>
             <td>入學要求</td>
             <td>學士學位 + IELTS ≥ 6.5 / TOEFL ≥ 79 + Statement of Purpose（英文）+ 成績表 + 推薦信 × 2（至少 1 封學術推薦）</td>
-            <td><a href="https://pg.com.cuhk.edu.hk/pgp_nm/index-2.html" target="_blank">入學要求</a></td>
+            <td><a href="https://pg.com.cuhk.edu.hk/pgp_nm/index-2.html" target="_blank" rel="noopener">入學要求</a></td>
           </tr>
           <tr>
             <td>申請時間</td>
             <td>9 月開放申請；優先輪截止 12 月初、最終輪 1 月中（滾動取錄，早申早審）</td>
-            <td><a href="https://www.gs.cuhk.edu.hk/programmes/social-science/msc-new-media" target="_blank">CUHK GS 課程頁</a></td>
+            <td><a href="https://www.gs.cuhk.edu.hk/programmes/social-science/msc-new-media" target="_blank" rel="noopener">CUHK GS 課程頁</a></td>
           </tr>
           <tr>
             <td>準備工作</td>
@@ -1211,6 +1219,169 @@
     </div>
   </section>
 
+  <!-- ===== 模塊 9.5：校園資訊 & 聯繫人（LY） ===== -->
+  <section class="page" data-account="ly" id="page-info">
+    <div class="card">
+      <div class="card-title">🔗 校園系統快速入口（自動開新視窗）</div>
+      <div class="quick-grid">
+        <a class="qk" href="https://canvas.polyu.edu.hk/" target="_blank" rel="noopener">🎨 Canvas 學習平台</a>
+        <a class="qk" href="https://www.polyu.edu.hk/student" target="_blank" rel="noopener">🎓 eStudent</a>
+        <a class="qk" href="https://my.polyu.edu.hk/" target="_blank" rel="noopener">🔐 myPolyU 入口</a>
+        <a class="qk" href="https://www.polyu.edu.hk/connectmail/" target="_blank" rel="noopener">✉️ Connect Email</a>
+        <a class="qk" href="https://www.lib.polyu.edu.hk/" target="_blank" rel="noopener">📚 Pao Yue-kong 圖書館</a>
+        <a class="qk" href="https://www.polyu.edu.hk/ar/students-in-taught-programmes/annual-schedules/timetable-exam-assessment/" target="_blank" rel="noopener">🗓️ 時間表 / 考試安排</a>
+        <a class="qk" href="https://www.polyu.edu.hk/ar/" target="_blank" rel="noopener">🏛️ Academic Registry</a>
+        <a class="qk" href="https://www.polyu.edu.hk/sao" target="_blank" rel="noopener">🏛️ SAO 學生事務處</a>
+        <a class="qk" href="https://www.polyu.edu.hk/shtm" target="_blank" rel="noopener">🏨 SHTM 學院</a>
+        <a class="qk" href="https://www.polyu.edu.hk/wie" target="_blank" rel="noopener">💼 WIE 實習</a>
+        <a class="qk" href="https://www.polyu.edu.hk/geo/" target="_blank" rel="noopener">✈️ GEO 環球事務</a>
+        <a class="qk" href="https://www.polyu.edu.hk/its/" target="_blank" rel="noopener">🛠️ ITS 資訊科技</a>
+        <a class="qk" href="https://github.com/KASA-LKC" target="_blank" rel="noopener">🐙 GitHub</a>
+      </div>
+      <div class="src">Canvas 用途：獲取 lecture note、交付作業、接收成績、教授訊息。用 PolyU NetID + NetPassword 登入；如無法登入請聯絡 ITS（見下方）。連結已逐一核實 HTTP 200（2026-08）。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔑 我嘅帳號登入資訊（GitHub & Canvas · 只存本機）</div>
+      <div class="form-row">
+        <input id="lgGhUser" placeholder="GitHub 用戶名稱（Username）" value="KASA-LKC" />
+        <input id="lgGhEmail" placeholder="GitHub Email（收驗證碼用）" value="cle061103@gmail.com" />
+        <input id="lgCanvasLogin" placeholder="Canvas 學號" value="26017276d" />
+      </div>
+      <div class="form-row">
+        <input id="lgPwd" type="password" placeholder="Canvas 密碼（隱藏顯示）" />
+        <button class="ghost" id="lgTogglePwd" style="padding:4px 10px">👁 顯示</button>
+        <button class="primary" id="lgSave" style="padding:4px 12px">💾 儲存登入資訊</button>
+      </div>
+      <div class="kv"><span>GitHub 入口</span><b><a href="https://github.com/KASA-LKC" target="_blank" rel="noopener">github.com/KASA-LKC</a></b></div>
+      <div class="kv"><span>Canvas 入口</span><b><a href="https://canvas.polyu.edu.hk/" target="_blank" rel="noopener">canvas.polyu.edu.hk</a></b></div>
+      <div class="src">🔒 密碼只儲存喺本機瀏覽器（localStorage），唔會上傳。GitHub 係用 Email 收驗證碼登入（無密碼）；Canvas 密碼請妥善保管，建議用密碼管理器（如 1Password / Bitwarden）管理，並喺共用電腦避免留底。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👩‍🏫 學術顧問（Academic Advisor）</div>
+      <div class="kv"><span>我嘅 Academic Advisor</span><b id="infoAdvisorName">（由 SHTM 指派，見 Canvas / SHTM 通告）</b></div>
+      <div class="kv"><span>Academic Advisor Email</span><b id="infoAdvisorEmail"><input id="advisorEmailInput" placeholder="例如：xxx@polyu.edu.hk" style="max-width:240px" /> <button class="ghost" id="saveAdvisorBtn" style="padding:2px 8px">💾 儲存</button></b></div>
+      <div class="kv"><span>SAO Academic Advising Officer</span><b><a href="mailto:cws.aaenq@polyu.edu.hk">cws.aaenq@polyu.edu.hk</a> · 3400 8203 · QT308（GUR / 學業規劃）</b></div>
+      <div class="src">學業有疑問 → 先搵 Academic Advisor；GUR / 選課規劃 → 搵 SAO Academic Advising Officer。其他 advisor 見下方各類別。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📇 聯繫人總覽 —「邊個問題搵邊個」</div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>搵邊個</th><th>負責咩</th><th>Email</th><th>電話</th></tr></thead>
+          <tbody>
+            <tr><td>🧑‍🏫 Academic Advisor（SHTM）</td><td>學業問題、選科、升學建議（最先搵）</td><td id="infoAdvEmailCell">—</td><td>見 SHTM 通告</td></tr>
+            <tr><td>👩‍💼 Ada Au（SHTM 系統性支援）</td><td>學業行政 / 系統性支援</td><td><a href="mailto:ada.au@polyu.edu.hk">ada.au@polyu.edu.hk</a></td><td>3400-2201</td></tr>
+            <tr><td>💼 Shirley Ng（SHTM WIE / 實習）</td><td>WIE 實習、Previous Internship</td><td><a href="mailto:shirleysn.ng@polyu.edu.hk">shirleysn.ng@polyu.edu.hk</a></td><td>3400-2157</td></tr>
+            <tr><td>✈️ Ada Lo（SHTM Exchange）</td><td>交換計劃（申請 / 提名）</td><td><a href="mailto:ada.lo@polyu.edu.hk">ada.lo@polyu.edu.hk</a></td><td>—</td></tr>
+            <tr><td>✈️ Linda Law（SHTM Exchange）</td><td>交換計劃（申請 / 提名）</td><td><a href="mailto:linda.law@polyu.edu.hk">linda.law@polyu.edu.hk</a></td><td>—</td></tr>
+            <tr><td>📚 AR（Academic Registry）</td><td>選科 / Add-Drop / 學分 / 成績單 / 畢業</td><td><a href="mailto:ar.subreg@polyu.edu.hk">ar.subreg@polyu.edu.hk</a></td><td>2333 0600 / 2766 5599</td></tr>
+            <tr><td>🏛️ SAO 總辦</td><td>學生生活 / 活動 / 一般查詢</td><td><a href="mailto:sao.info@polyu.edu.hk">sao.info@polyu.edu.hk</a></td><td>2766 6800 · QT308</td></tr>
+            <tr><td>💰 SAO 財務資助（FA）</td><td>TSFS / NLSFT / PUFA 資助</td><td><a href="mailto:sao.fa@polyu.edu.hk">sao.fa@polyu.edu.hk</a></td><td>2766 6800</td></tr>
+            <tr><td>🛠️ ITS 資訊科技支援</td><td>NetID / Email / Canvas 登入 / Wi-Fi</td><td>IT ServiceDesk <a href="https://www.polyu.edu.hk/itservicedesk/" target="_blank" rel="noopener">網上報障</a></td><td>2766 5900 · WhatsApp/WeChat 6577 9669 · M201</td></tr>
+            <tr><td>📖 圖書館</td><td>借書 / 小組房 / 資料庫 / 舊試卷</td><td>—</td><td>2766-6863 · WhatsApp 6423-0820</td></tr>
+            <tr><td>🏨 SHTM 總機</td><td>學院一般查詢</td><td><a href="mailto:shtm.info@polyu.edu.hk">shtm.info@polyu.edu.hk</a></td><td>3400 2200 · TH711</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="src">資料來源：PolyU 官方網站（AR / SAO / SHTM / ITS / Library）核實 2026-08。號碼為辦公時間適用。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📍 常用地點 & 辦公時間</div>
+      <div class="kv"><span>SHTM 學院</span><b>TH711, 7/F, 17 Science Museum Road, TST East（週一至五 9:00–18:00）</b></div>
+      <div class="kv"><span>SAO 櫃枱</span><b>QT308, Chow Yei Ching Building, Entrance at Core T（週一至五 9:00–12:45 / 14:00–18:00）</b></div>
+      <div class="kv"><span>AR 服務中心</span><b>Academic Registry Service Centre（選科期提供特別熱線）</b></div>
+      <div class="kv"><span>IT HelpCentre</span><b>M201, Li Ka Shing Tower（週一至五 8:30–19:00 · 週六 9:00–12:00）</b></div>
+      <div class="kv"><span>學生電腦中心 SCC</span><b>4/F, Li Ka Shing Tower（8:30–23:30）</b></div>
+      <div class="kv"><span>圖書館</span><b>Pao Yue-kong Library, PolyU Hung Hom（開放時間以官方 App 為準）</b></div>
+    </div>
+  </section>
+
+  <!-- ===== 模塊 9.6：Canvas 同步提醒（LY） ===== -->
+  <section class="page" data-account="ly" id="page-canvas">
+    <div class="card">
+      <div class="card-title">🎨 Canvas 同步 & 提醒</div>
+      <p style="font-size:13px;color:#4b5563;margin-top:-6px">
+        將你嘅 <b>Canvas API Token</b> 貼入下面，Dashboard 就會直接讀取 Canvas 上嘅課程、作業與截止日期，
+        自動顯示「即將到期」清單、加入待辦，並喺到期前發出<b>瀏覽器通知</b>提醒你交功課 / 溫書。
+      </p>
+      <div class="form-row">
+        <input id="canvasToken" type="password" placeholder="Canvas API Token（喺 Canvas → Account → Settings → Approved Integrations 攞）" style="flex:2;min-width:260px" />
+        <button class="primary" id="saveCanvasBtn">💾 儲存 & 連接</button>
+        <button class="ghost" id="syncCanvasBtn">🔄 立即同步</button>
+        <button class="ghost" id="clearCanvasBtn">🗑 清除 Token</button>
+      </div>
+      <div id="canvasStatus" class="src" style="margin-top:8px">狀態：未連接。如何攞 Token：登入 <a href="https://canvas.polyu.edu.hk/" target="_blank" rel="noopener">canvas.polyu.edu.hk</a> → 右上角頭像 → Settings → Approved Integrations → New Access Token。Token 只儲存喺本機瀏覽器（localStorage），唔會上傳。</div>
+      <div class="form-row" style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="canvasAutoRemind" checked /> 到期前 2 日自動通知提醒</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="canvasAutoTodo" checked /> 同步時自動加入待辦清單</label>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📚 我嘅 Canvas 課程</div>
+        <div id="canvasCourses" class="plan-list"><div class="alert-item" style="border-left-color:#9ca3af"><span>尚未同步 — 請先儲存 Token 並連接。</span></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⏰ 即將到期作業 / 考試</div>
+        <div id="canvasAssignments" class="plan-list"><div class="alert-item" style="border-left-color:#9ca3af"><span>同步後會顯示最近 30 日到期嘅作業。</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BF 0.5：HKCC 資訊 & 聯繫人 ===== -->
+  <section class="page" data-account="bf" id="page-bf_info">
+    <div class="card">
+      <div class="card-title">🔗 HKCC 系統快速入口（自動開新視窗）</div>
+      <div class="quick-grid">
+        <a class="qk" href="https://www.hkcc-polyu.edu.hk/myHKCC/" target="_blank" rel="noopener">🎓 my.HKCC 學生入口</a>
+        <a class="qk" href="https://portal.cpce-polyu.edu.hk/" target="_blank" rel="noopener">🔐 CPCE Portal</a>
+        <a class="qk" href="https://outlook.office.com/owa/?realm=common.cpce-polyu.edu.hk" target="_blank" rel="noopener">✉️ 學生 Email（Webmail）</a>
+        <a class="qk" href="https://www.hkcc-polyu.edu.hk/" target="_blank" rel="noopener">🏫 HKCC 官網</a>
+        <a class="qk" href="https://www.cpce-polyu.edu.hk/current-students/academic-matters/student-portal" target="_blank" rel="noopener">🏛️ CPCE 現屆學生</a>
+        <a class="qk" href="https://sao.cpce-polyu.edu.hk" target="_blank" rel="noopener">🎗️ CSAO 學生事務處</a>
+        <a class="qk" href="https://www.cpce-polyu.edu.hk/academic-registry" target="_blank" rel="noopener">📋 CPCE Academic Registry（CAR）</a>
+        <a class="qk" href="https://www.polyu.edu.hk/study/ug/admissions/non-jupas-senior-year" target="_blank" rel="noopener">🎯 PolyU Non-JUPAS</a>
+        <a class="qk" href="https://join.hkust.edu.hk/" target="_blank" rel="noopener">🚀 HKUST 入學</a>
+        <a class="qk" href="https://www.cityu.edu.hk/admissions/" target="_blank" rel="noopener">🌆 CityU 入學</a>
+        <a class="qk" href="https://www.apply.eduhk.hk/ug/senioryear" target="_blank" rel="noopener">🏫 EdUHK 入學</a>
+        <a class="qk" href="https://admissions.hkmu.edu.hk/" target="_blank" rel="noopener">🩺 HKMU 入學</a>
+      </div>
+      <div class="src">HKCC 屬 CPCE（PolyU 專業及持續教育學院），主系統係 <b>my.HKCC 學生入口</b>（選科 / 時間表 / 成績）＋ <b>CPCE Portal</b>（Email / Blackboard Ultra 網上學習 / 各系統入口）。Blackboard Ultra 為取 lecture note、交作業平台，經 CPCE Portal 登入。連結已逐一核實（2026-08）。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📇 HKCC 聯繫人總覽 —「邊個問題搵邊個」</div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>搵邊個</th><th>負責咩</th><th>Email</th><th>電話</th></tr></thead>
+          <tbody>
+            <tr><td>🧑‍🏫 Academic Advisor（Programme Advising Team）</td><td>學業建議 / 選科 / 升學銜接（名單見 Moodle）</td><td>（見 Moodle 指派）</td><td>—</td></tr>
+            <tr><td>📚 CPCE Academic Registry（CAR）</td><td>選科 / 時間表 / 成績 / 申請成績表</td><td><a href="mailto:cc.car@hkcc-polyu.edu.hk">cc.car@hkcc-polyu.edu.hk</a></td><td>3746 0900</td></tr>
+            <tr><td>🎗️ CSAO（CPCE 學生事務處）</td><td>學生生活 / 活動 / 一般支援</td><td><a href="mailto:sao@cpce-polyu.edu.hk">sao@cpce-polyu.edu.hk</a></td><td>3746 0880 · 西九龍校園北座 3/F</td></tr>
+            <tr><td>🛠️ CPCE ITU 資訊科技</td><td>Email / 帳號 / Wi-Fi / 電腦</td><td>（經 CPCE Portal / PVA 助手）</td><td>3746-0819（西九龍）· 3746-0818（紅磡灣）</td></tr>
+            <tr><td>🏫 HKCC 總辦公室</td><td>一般查詢 / 建議（用 HKCC 電郵寄）</td><td><a href="mailto:ccoffice@hkcc-polyu.edu.hk">ccoffice@hkcc-polyu.edu.hk</a></td><td>—</td></tr>
+            <tr><td>🧭 學生輔導（Student Counselling）</td><td>情緒 / 壓力 / 輔導服務</td><td><a href="mailto:cs@cpce-polyu.edu.hk">cs@cpce-polyu.edu.hk</a></td><td>6773-9700</td></tr>
+            <tr><td>🎓 Non-JUPAS 升學查詢</td><td>各院校收生（PolyU / HKUST / CityU / EdUHK / HKMU）</td><td colspan="2">見「Non-JUPAS 院校庫」及上方升學入口連結</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="src">資料來源：HKCC / CPCE 官方網站核實 2026-08。Academic Advisor 名單每學年更新，會喺 Moodle 公佈。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📍 HKCC 校園 & 常用地點</div>
+      <div class="kv"><span>PolyU 西九龍校園</span><b>North Tower, 西九龍（CSAO 櫃枱 3/F；IT Service Counter 2/F）</b></div>
+      <div class="kv"><span>PolyU 紅磡灣校園</span><b>Hung Hom Bay Campus（學生電腦中心 UG10）</b></div>
+      <div class="kv"><span>學生 Email 格式</span><b>學號@common.cpce-polyu.edu.hk（經 Outlook Webmail 登入）</b></div>
+      <div class="kv"><span>CPCE Mobile App</span><b>於 App Store / Google Play 下載「CPCE」App（校園資訊 / 通告）</b></div>
+    </div>
+  </section>
+
   <!-- ================================================================ -->
   <!-- ==================== 男友（Austin）帳號頁面 ==================== -->
   <!-- ================================================================ -->
@@ -1227,13 +1398,18 @@
           <span class="tag">🎓 已取得學分 33 / 63</span>
         </div>
         <div class="quick-grid">
+          <a class="qk" href="https://www.hkcc-polyu.edu.hk/myHKCC/" target="_blank" rel="noopener">🔐 my.HKCC</a>
+          <a class="qk" href="https://portal.cpce-polyu.edu.hk/" target="_blank" rel="noopener">🏛️ CPCE Portal</a>
+          <a class="qk" href="https://outlook.office.com/owa/?realm=common.cpce-polyu.edu.hk" target="_blank" rel="noopener">✉️ Webmail</a>
+          <a class="qk" href="https://sao.cpce-polyu.edu.hk" target="_blank" rel="noopener">🤝 CSAO</a>
+          <a class="qk" href="https://www.cpce-polyu.edu.hk/academic-registry" target="_blank" rel="noopener">📋 CAR</a>
           <a class="qk" href="https://www.polyu.edu.hk/student" target="_blank" rel="noopener">🎓 PolyU eStudent</a>
           <a class="qk" href="https://www.hkcc-polyu.edu.hk/" target="_blank" rel="noopener">🏫 HKCC 官網</a>
-          <a class="qk" href="https://www.polyu.edu.hk/admissions/non-local/non-jupas/" target="_blank" rel="noopener">📝 PolyU Non-JUPAS</a>
+          <a class="qk" href="https://www.polyu.edu.hk/study/ug/admissions/non-jupas-senior-year" target="_blank" rel="noopener">📝 PolyU Non-JUPAS</a>
           <a class="qk" href="https://www.polyu.edu.hk/" target="_blank" rel="noopener">🏛️ PolyU</a>
-          <a class="qk" href="https://join.ust.hk/" target="_blank" rel="noopener">🚀 HKUST Admissions</a>
+          <a class="qk" href="https://join.hkust.edu.hk/" target="_blank" rel="noopener">🚀 HKUST Admissions</a>
           <a class="qk" href="https://www.cityu.edu.hk/admissions/" target="_blank" rel="noopener">🌆 CityU Admissions</a>
-          <a class="qk" href="https://www.eduhk.hk/admissions/" target="_blank" rel="noopener">🏫 EdUHK Admissions</a>
+          <a class="qk" href="https://www.apply.eduhk.hk/ug/senioryear" target="_blank" rel="noopener">🏫 EdUHK Admissions</a>
           <a class="qk" href="https://admissions.hkmu.edu.hk/" target="_blank" rel="noopener">🩺 HKMU Admissions</a>
         </div>
       </div>
