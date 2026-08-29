@@ -158,7 +158,25 @@ FIX.lyDeadlines = [
   { t: '🚨 SHTM 交換計劃申請截止（13:00）', d: '2026-09-03' },
   { t: 'Add / Drop 結束（23:59）', d: '2026-09-12' },
   { t: '交換計劃面試（至 9/8）', d: '2026-09-07' },
-  { t: 'TSFS / NLSFT 申請截止', d: '2026-09-25' }
+  { t: 'TSFS / NLSFT 申請截止', d: '2026-09-25' },
+  /* 2026/27 Sem 1 學術日曆 + 作業/測驗（來源：AC.pdf + eStudent + HTM 3025 Scheme of Work + Canvas Outlook） */
+  { t: '中秋節翌日假期（晚間停課）', d: '2026-09-25' },
+  { t: '國慶日假期', d: '2026-10-01' },
+  { t: '重陽節翌日假期', d: '2026-10-19' },
+  { t: '📝 HTM 3025 Test 1（15%）', d: '2026-10-12' },
+  { t: '📝 ENGL1A28 Blog post #3', d: '2026-10-10' },
+  { t: '📝 ENGL1A28 Blog post #4', d: '2026-10-31' },
+  { t: '📝 ENGL1A28 Draft 1', d: '2026-10-24' },
+  { t: '📝 HTM 3025 Test 2（15%）', d: '2026-11-23' },
+  { t: '📝 ENGL1A28 Draft 2（optional）', d: '2026-11-07' },
+  { t: 'Semester 1 教學結束', d: '2026-11-28' },
+  { t: '📝 ENGL1A28 Final draft', d: '2026-11-30' },
+  { t: '📚 HTM 3025 Assignment 1: Research Proposal（35%）', d: '2026-12-02' },
+  { t: '📚 HTM 3025 Assignment 2: SPSS Data Analysis（25%）', d: '2026-12-02' },
+  { t: 'Revision period', d: '2026-11-30' },
+  { t: '📖 Semester 1 考試期開始', d: '2026-12-03' },
+  { t: '📖 Semester 1 考試期結束', d: '2026-12-18' },
+  { t: 'Semester 1 成績公佈', d: '2027-01-14' }
 ];
 
 /* 學術日曆重點（學習進度頁） */
@@ -168,31 +186,66 @@ FIX.calendar = [
   { t: '正式選科', d: '2026-08-21' },
   { t: '開學前調整', d: '2026-08-28' },
   { t: 'Sem 1 開課 · WIE 學分轉移截止', d: '2026-08-31' },
-  { t: 'Add / Drop 期', d: '2026-08-31' },
+  { t: 'Add / Drop 期開始', d: '2026-08-31' },
   { t: 'SHTM 交換計劃申請截止', d: '2026-09-03' },
   { t: '交換計劃面試', d: '2026-09-07' },
+  { t: 'Add / Drop 期結束', d: '2026-09-12' },
+  { t: '中秋節翌日假期（晚間停課）', d: '2026-09-25' },
+  { t: 'PolyU Info Day（日間及晚間停課）', d: '2026-10-10' },
+  { t: '國慶日假期', d: '2026-10-01' },
+  { t: '重陽節翌日假期', d: '2026-10-19' },
+  { t: '📝 HTM 3025 Test 1', d: '2026-10-12' },
+  { t: '📝 ENGL1A28 Blog post #3', d: '2026-10-10' },
+  { t: '📝 ENGL1A28 Blog post #4', d: '2026-10-31' },
+  { t: '📝 ENGL1A28 Draft 1', d: '2026-10-24' },
+  { t: '📝 HTM 3025 Test 2', d: '2026-11-23' },
+  { t: '📝 ENGL1A28 Draft 2（optional）', d: '2026-11-07' },
+  { t: 'Semester 1 教學結束', d: '2026-11-28' },
+  { t: '📝 ENGL1A28 Final draft', d: '2026-11-30' },
+  { t: '📚 HTM 3025 Assignment 1: Research Proposal', d: '2026-12-02' },
+  { t: '📚 HTM 3025 Assignment 2: SPSS Data Analysis', d: '2026-12-02' },
+  { t: 'Revision period 開始', d: '2026-11-30' },
+  { t: 'Semester 1 考試期開始', d: '2026-12-03' },
+  { t: 'Semester 1 考試期結束', d: '2026-12-18' },
+  { t: 'Semester 1 成績公佈', d: '2027-01-14' },
   { t: 'TSFS / NLSFT 截止', d: '2026-09-25' }
 ];
 
-/* 預設時間表（2026/27 Sem 1 · 可點擊編輯） */
+/* 預設時間表（2026/27 Sem 1 · 可點擊編輯）
+   來源：eStudent 2026-08-29。時段以整點表示，實際上課時間見備註。
+   星期：0=一 1=二 2=三 3=四 4=五。晚間課堂（ENGL1A28）另見學習頁備註。 */
 FIX.timetable = [
-  { d: 0, t: 10, subj: 'HTM3201 酒店營運管理', room: 'QT308' },
-  { d: 0, t: 11, subj: 'HTM3201 酒店營運管理', room: 'QT308' },
-  { d: 1, t: 14, subj: 'HTM3212 餐飲管理', room: 'FG301' },
-  { d: 2, t: 9,  subj: 'HTM3301 旅遊市場學', room: 'TU101' },
-  { d: 2, t: 10, subj: 'HTM3301 旅遊市場學', room: 'TU101' },
-  { d: 3, t: 15, subj: 'HTM3402 酒店財務管理', room: 'GH201' },
-  { d: 4, t: 11, subj: 'GE3401 通識', room: 'CORE S509' },
-  { d: 4, t: 16, subj: 'HTM3201 導修 Tutorial', room: 'QT201' }
+  /* 星期一 */
+  { d: 0, t: 10, subj: 'HTM3211 Professional Development', room: 'THB104' },
+  { d: 0, t: 12, subj: 'HTM3222 Financial Mgmt (LEC)', room: 'THB100' },
+  { d: 0, t: 16, subj: 'HTM3205 Analysing & Interpreting Research (LEC)', room: 'THB100' },
+  /* 星期二 */
+  { d: 1, t: 9,  subj: 'HTM3226 Managing HR (SEM)', room: 'THB106' },
+  { d: 1, t: 12, subj: 'HTM3226 Managing HR (LEC)', room: 'THB100' },
+  { d: 1, t: 15, subj: 'CHC1CM15P Splendours of Imperial China (LEC)', room: 'Y305' },
+  { d: 1, t: 17, subj: 'HTM3222 Financial Mgmt (SEM)', room: 'THB106' },
+  /* 星期三 */
+  { d: 2, t: 16, subj: 'HTM3231 Events Experience Mgmt (LEC)', room: 'TH302' },
+  /* 星期四 */
+  { d: 3, t: 10, subj: 'HTM3205 Analysing & Interpreting Research (SEM)', room: 'TH303' },
+  /* 星期五 */
+  { d: 4, t: 9,  subj: 'CLC3281P Chinese Communication', room: 'DE303' },
+  { d: 4, t: 12, subj: 'HTM3231 Events Experience Mgmt (SEM)', room: 'TH302' },
+  { d: 4, t: 14, subj: 'CHC1CM15P Splendours of Imperial China (TUT)', room: 'EF312' }
 ];
 
-/* 預設科目（學習進度 · Sem 1） */
+/* 預設科目（學習進度 · Sem 1）
+   來源：eStudent 2026-08-29 · CHAN Lok Yi · 24446-SYE · BSc (HONS) HOTEL & TOURISM MANAGEMENT (EVENT & EXPERIENCE MANAGEMENT) */
 FIX.studySubjects = [
-  { code: 'HTM3201', name: '酒店營運管理', progress: 0 },
-  { code: 'HTM3212', name: '餐飲管理', progress: 0 },
-  { code: 'HTM3301', name: '旅遊市場學', progress: 0 },
-  { code: 'HTM3402', name: '酒店財務管理', progress: 0 },
-  { code: 'GE3401', name: '通識', progress: 0 }
+  { code: 'CLC3281P', name: 'Chinese Communication for Hospitality and Tourism Professionals', progress: 0 },
+  { code: 'CHC1CM15P', name: 'Splendours of Imperial China', progress: 0 },
+  { code: 'ENGL1A28', name: 'Effective Communication for Emerging Professionals', progress: 0 },
+  { code: 'HTM1Q01', name: 'Essential Components of General Education', progress: 0 },
+  { code: 'HTM3205', name: 'Analysing and Interpreting Research', progress: 0 },
+  { code: 'HTM3211', name: 'Professional Development', progress: 0 },
+  { code: 'HTM3222', name: 'Financial Management in Hospitality, Tourism and Events', progress: 0 },
+  { code: 'HTM3226', name: 'Managing Human Resources in Hospitality, Tourism and Events', progress: 0 },
+  { code: 'HTM3231', name: 'Events Experience Management', progress: 0 }
 ];
 
 /* BF 重要日程（Non-JUPAS 2027/28 · 預計，以各大學官方公佈為準） */
@@ -880,7 +933,7 @@ function initTodos() {
    ============================================================ */
 function renderInfo() {
   if (!$id('page-info')) return;
-  var adv = LS.get('advisorInfo', { name: '', email: '' });
+  var adv = LS.get('advisorInfo', { name: 'CHAN, Chris KK', email: 'kkcchan@polyu.edu.hk' });
   if ($id('infoAdvisorName')) $id('infoAdvisorName').textContent = adv.email ? (adv.name || '（已儲存）') : '（由 SHTM 指派，見 Canvas / SHTM 通告）';
   if ($id('infoAdvEmailCell')) $id('infoAdvEmailCell').innerHTML = adv.email ? '<a href="mailto:' + esc(adv.email) + '">' + esc(adv.email) + '</a>' : '—';
   if ($id('advisorEmailInput')) $id('advisorEmailInput').value = adv.email || '';

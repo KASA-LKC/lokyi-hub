@@ -85,7 +85,7 @@
     <button class="export-btn" id="exportAllBtn">⬇️  匯出所有資料</button>
     <button class="export-btn" id="importBtn" title="匯入先前匯出的 JSON 備份">📥  匯入備份資料</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden />
-    <div class="ver-tag" id="verTag">v2.3.7</div>
+    <div class="ver-tag" id="verTag">v2.3.8</div>
   </div>
 </aside>
 
@@ -921,6 +921,12 @@
         </div>
 
         <div id="timetableGrid" class="timetable-grid"></div>
+        <div class="src" style="margin-top:8px">
+          <b>🌙 晚間課堂（時間表網格外）：</b><br>
+          星期一 18:30–20:20 · ENGL1A28 LEC（TU107 · LEE, Tobias C）<br>
+          星期三 19:30–20:20 · ENGL1A28 SEM（BC305 · DAVIS, Christelle）<br>
+          ENGL1A28 SEM004 因人數不足已取消，SEM002 為現行班別。
+        </div>
         <div class="src">來源：學校時間表。上傳圖片/PDF 後自動取代下方表格顯示；粘貼文字可自動解析填入可編輯表格；點格子可手動修改。</div>
       </div>
 
@@ -1260,8 +1266,8 @@
 
     <div class="card">
       <div class="card-title">👩‍🏫 學術顧問（Academic Advisor）</div>
-      <div class="kv"><span>我嘅 Academic Advisor</span><b id="infoAdvisorName">（由 SHTM 指派，見 Canvas / SHTM 通告）</b></div>
-      <div class="kv"><span>Academic Advisor Email</span><b id="infoAdvisorEmail"><input id="advisorEmailInput" placeholder="例如：xxx@polyu.edu.hk" style="max-width:240px" /> <button class="ghost" id="saveAdvisorBtn" style="padding:2px 8px">💾 儲存</button></b></div>
+      <div class="kv"><span>我嘅 Academic Advisor</span><b id="infoAdvisorName">CHAN, Chris KK</b></div>
+      <div class="kv"><span>Academic Advisor Email</span><b id="infoAdvisorEmail"><input id="advisorEmailInput" placeholder="例如：xxx@polyu.edu.hk" value="kkcchan@polyu.edu.hk" style="max-width:240px" /> <button class="ghost" id="saveAdvisorBtn" style="padding:2px 8px">💾 儲存</button></b></div>
       <div class="kv"><span>SAO Academic Advising Officer</span><b><a href="mailto:cws.aaenq@polyu.edu.hk">cws.aaenq@polyu.edu.hk</a> · 3400 8203 · QT308（GUR / 學業規劃）</b></div>
       <div class="src">學業有疑問 → 先搵 Academic Advisor；GUR / 選課規劃 → 搵 SAO Academic Advising Officer。其他 advisor 見下方各類別。</div>
     </div>

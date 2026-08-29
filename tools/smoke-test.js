@@ -51,7 +51,7 @@ setTimeout(() => {
   function chk(name, cond, extra) { checks.push({ name, ok: !!cond, extra: extra || '' }); }
 
   chk('無執行時錯誤', errors.length === 0, errors.join(' | '));
-  chk('版本標籤 v2.3.7', (d.getElementById('verTag') || {}).textContent === 'v2.3.7', (d.getElementById('verTag') || {}).textContent);
+  chk('版本標籤 v2.3.8', (d.getElementById('verTag') || {}).textContent === 'v2.3.8', (d.getElementById('verTag') || {}).textContent);
   chk('page-info 存在', !!d.getElementById('page-info'));
   chk('page-canvas 存在', !!d.getElementById('page-canvas'));
   chk('page-bf_info 存在', !!d.getElementById('page-bf_info'));
